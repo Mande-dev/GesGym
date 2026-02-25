@@ -1,0 +1,308 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartClub Pro | Salle de sport premium</title>
+  <!-- Tailwind + Inter + Font Awesome + SweetAlert2 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Styles personnalisés -->
+  <link rel="stylesheet" href="{% static 'css/style_accueil.css' %}">
+
+</head>
+<body class="bg-white text-gray-800 antialiased">
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
+    <div class="container mx-auto px-6 lg:px-8 py-3 flex items-center justify-between flex-wrap gap-4">
+      <!-- Logo texte uniquement -->
+      <div class="flex items-center gap-2">
+        <span class="text-2xl font-extrabold italic tracking-tight">
+          <span class="text-[#FF8C00]">SmartClub</span><span class="text-[#007BFF]">Pro</span>
+        </span>
+      </div>
+
+      <!-- Navigation desktop -->
+      <nav class="hidden md:flex gap-8 text-sm font-semibold text-gray-700">
+        <a href="#accueil" class="hover:text-[#FF8C00] transition">Accueil</a>
+        <a href="#services" class="hover:text-[#FF8C00] transition">Services</a>
+        <a href="#tarifs" class="hover:text-[#FF8C00] transition">Tarifs</a>
+        <a href="#contact" class="hover:text-[#FF8C00] transition">Contact</a>
+      </nav>
+
+      <!-- Boutons desktop (cachés sur mobile) -->
+      <div class="hidden md:flex gap-3">
+        <a href="{% url 'connexion' %}" id="loginBtn" class="px-5 py-2.5 text-sm font-semibold text-[#004e92] border-2 border-[#004e92] rounded-full hover:bg-[#004e92] hover:text-white transition-all">Connexion</a>
+        <a href="#" id="registerBtn" class="px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-[#FF8C00] to-orange-600 text-white rounded-full shadow-lg shadow-orange-200 hover:shadow-xl transition">Inscription</a>
+      </div>
+
+      <!-- Hamburger mobile -->
+      <button id="menu-btn" class="block md:hidden text-2xl text-gray-700 focus:outline-none">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+
+    <!-- Mobile navigation avec boutons d'authentification -->
+    <div id="mobile-menu" class="mobile-menu md:hidden bg-white border-t border-gray-100 px-6">
+      <nav class="flex flex-col py-4 space-y-3 text-sm font-semibold text-gray-700">
+        <a href="#accueil" class="hover:text-[#FF8C00] transition">Accueil</a>
+        <a href="#services" class="hover:text-[#FF8C00] transition">Services</a>
+        <a href="#tarifs" class="hover:text-[#FF8C00] transition">Tarifs</a>
+        <a href="#contact" class="hover:text-[#FF8C00] transition">Contact</a>
+        
+        <!-- Boutons d'authentification dans le menu mobile - CORRIGÉ -->
+        <div class="mobile-auth-buttons space-y-2">
+          <a href="{% url 'connexion' %}" id="mobileLoginBtn" class="px-5 py-2.5 text-sm font-semibold text-[#004e92] border-2 border-[#004e92] rounded-full hover:bg-[#004e92] hover:text-white transition-all block text-center">Connexion</a>
+          <a href="#" id="mobileRegisterBtn" class="px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-[#FF8C00] to-orange-600 text-white rounded-full shadow-lg shadow-orange-200 hover:shadow-xl transition block text-center">Inscription</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO (simplifié) -->
+  <section id="accueil" class="relative overflow-hidden bg-gradient-to-br from-blue-50 to-white py-16 lg:py-24">
+    <div class="container mx-auto px-6 lg:px-8">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div class="text-center lg:text-left animate-on-scroll animate-fade-left">
+          <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-6">
+            <span class="gradient-text">Dépassez vos limites</span><br>
+            <span class="text-gray-900">dans un cadre exceptionnel</span>
+          </h1>
+          <p class="text-lg md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto lg:mx-0">
+            Équipements dernier cri, coachs diplômés, cours collectifs illimités et une ambiance motivante.
+          </p>
+        </div>
+        <div class="relative order-first lg:order-last animate-on-scroll animate-fade-right">
+          <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Salle de sport" class="rounded-3xl shadow-2xl object-cover w-full h-auto border-8 border-white/50">
+          <div class="absolute -bottom-6 -left-6 bg-white p-4 rounded-2xl shadow-xl hidden md:flex items-center gap-3">
+            <i class="fas fa-star text-yellow-400 text-2xl"></i>
+            <div><span class="font-bold text-xl">4.9</span><span class="text-gray-500">/5 · 1200+ avis</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES (inchangé) -->
+  <section id="services" class="py-24 bg-white">
+    <div class="container mx-auto px-6 lg:px-8">
+      <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 animate-on-scroll animate-fade-up">Tout ce qu'il faut pour <span class="gradient-text">progresser</span></h2>
+      <p class="text-center text-gray-600 max-w-2xl mx-auto mb-16 text-lg animate-on-scroll animate-fade-up">Une offre complète adaptée à tous les niveaux et objectifs.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- 6 cartes service -->
+        <div class="bg-gray-50 p-8 rounded-3xl border border-gray-100 hover:shadow-xl transition hover:-translate-y-2 animate-on-scroll animate-fade-up delay-1">
+          <div class="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mb-5 text-[#004e92] text-2xl"><i class="fas fa-dumbbell"></i></div>
+          <h3 class="text-xl font-bold mb-3">Équipement haut de gamme</h3>
+          <p class="text-gray-500">Machines de musculation, cardio, poids libres et zone fonctionnelle.</p>
+        </div>
+        <div class="bg-gray-50 p-8 rounded-3xl border border-gray-100 hover:shadow-xl transition hover:-translate-y-2 animate-on-scroll animate-fade-up delay-2">
+          <div class="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mb-5 text-[#FF8C00] text-2xl"><i class="fas fa-users"></i></div>
+          <h3 class="text-xl font-bold mb-3">Cours collectifs</h3>
+          <p class="text-gray-500">Yoga, Crossfit, BodyPump, Zumba, cycling… +30 cours/semaine.</p>
+        </div>
+        <div class="bg-gray-50 p-8 rounded-3xl border border-gray-100 hover:shadow-xl transition hover:-translate-y-2 animate-on-scroll animate-fade-up delay-3">
+          <div class="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mb-5 text-green-600 text-2xl"><i class="fas fa-user-check"></i></div>
+          <h3 class="text-xl font-bold mb-3">Coaching personnel</h3>
+          <p class="text-gray-500">Suivi individuel, programmes sur mesure et nutrition.</p>
+        </div>
+        <div class="bg-gray-50 p-8 rounded-3xl border border-gray-100 hover:shadow-xl transition hover:-translate-y-2 animate-on-scroll animate-fade-up delay-4">
+          <div class="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center mb-5 text-purple-600 text-2xl"><i class="fas fa-clock"></i></div>
+          <h3 class="text-xl font-bold mb-3">Horaires étendus</h3>
+          <p class="text-gray-500">6h-23h en semaine, 8h-20h le week-end.</p>
+        </div>
+        <div class="bg-gray-50 p-8 rounded-3xl border border-gray-100 hover:shadow-xl transition hover:-translate-y-2 animate-on-scroll animate-fade-up delay-5">
+          <div class="w-14 h-14 bg-pink-100 rounded-2xl flex items-center justify-center mb-5 text-pink-600 text-2xl"><i class="fas fa-spa"></i></div>
+          <h3 class="text-xl font-bold mb-3">Espace bien-être</h3>
+          <p class="text-gray-500">Sauna, hammam, vestiaires sécurisés.</p>
+        </div>
+        <div class="bg-gray-50 p-8 rounded-3xl border border-gray-100 hover:shadow-xl transition hover:-translate-y-2 animate-on-scroll animate-fade-up delay-1">
+          <div class="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mb-5 text-indigo-600 text-2xl"><i class="fas fa-wifi"></i></div>
+          <h3 class="text-xl font-bold mb-3">Espace détente & wifi</h3>
+          <p class="text-gray-500">Coin lounge, wifi haut débit.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION COURS COLLECTIFS -->
+  <section class="py-20 bg-gradient-to-r from-blue-50 to-indigo-50">
+    <div class="container mx-auto px-6 lg:px-8">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div class="animate-on-scroll animate-fade-left">
+          <span class="text-sm font-bold text-[#FF8C00] uppercase tracking-wider">Cours collectifs</span>
+          <h2 class="text-3xl md:text-4xl font-bold mt-2 mb-6">L'énergie du groupe <br>pour vous dépasser</h2>
+          <p class="text-gray-600 mb-8">Que vous soyez débutant ou confirmé, nos cours collectifs offrent une expérience motivante et encadrée.</p>
+          <ul class="space-y-4">
+            <li class="flex items-start gap-3"><i class="fas fa-check-circle text-green-500 mt-1"></i><span><strong>+30 cours/semaine</strong> – horaires flexibles</span></li>
+            <li class="flex items-start gap-3"><i class="fas fa-check-circle text-green-500 mt-1"></i><span><strong>Inclus dans tous les abonnements</strong> sans supplément</span></li>
+          </ul>
+        </div>
+        <div class="relative animate-on-scroll animate-fade-right">
+          <img src="https://images.unsplash.com/photo-1571902943202-507ec2618e8f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Cours collectif" class="rounded-3xl shadow-2xl object-cover w-full h-auto border-8 border-white">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TARIFS -->
+  <section id="tarifs" class="py-24 bg-white">
+    <div class="container mx-auto px-6 lg:px-8">
+      <h2 class="text-3xl md:text-4xl font-bold text-center mb-4 animate-on-scroll animate-fade-up">Des formules <span class="gradient-text">adaptées</span></h2>
+      <p class="text-center text-gray-600 max-w-2xl mx-auto mb-16 text-lg animate-on-scroll animate-fade-up">Sans engagement ou avec avantages.</p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <!-- Mensuel -->
+        <div class="bg-gray-50 rounded-3xl p-8 border border-gray-200 hover:shadow-xl transition hover:-translate-y-2 animate-on-scroll animate-fade-up delay-1">
+          <h3 class="text-2xl font-bold mb-2">Mensuel</h3>
+          <p class="text-gray-500 mb-6">Idéal pour débuter</p>
+          <div class="text-4xl font-extrabold mb-6">45€<span class="text-lg font-normal text-gray-500">/mois</span></div>
+          <ul class="space-y-3 mb-8 text-gray-600">
+            <li><i class="fas fa-check text-green-500 mr-2"></i> Accès heures creuses</li>
+            <li><i class="fas fa-check text-green-500 mr-2"></i> Cours collectifs</li>
+            <li><i class="fas fa-check text-green-500 mr-2"></i> 1 coaching offert</li>
+            <li class="text-gray-400"><i class="fas fa-times mr-2"></i> Sauna</li>
+          </ul>
+          <a href="#" class="block text-center bg-white border-2 border-[#004e92] text-[#004e92] hover:bg-[#004e92] hover:text-white font-bold py-3 rounded-full transition">Souscrire</a>
+        </div>
+        <!-- Annuel (populaire) -->
+        <div class="bg-gradient-to-b from-blue-50 to-white rounded-3xl p-8 border-2 border-[#004e92] shadow-xl relative transform scale-105 z-10 animate-on-scroll animate-fade-up delay-2">
+          <div class="absolute top-0 right-0 bg-[#FF8C00] text-white text-xs font-bold px-4 py-1 rounded-bl-2xl rounded-tr-2xl">POPULAIRE</div>
+          <h3 class="text-2xl font-bold mb-2">Annuel</h3>
+          <p class="text-gray-500 mb-6">Meilleur rapport qualité/prix</p>
+          <div class="text-4xl font-extrabold mb-6">39€<span class="text-lg font-normal text-gray-500">/mois</span></div>
+          <ul class="space-y-3 mb-8 text-gray-600">
+            <li><i class="fas fa-check text-green-500 mr-2"></i> Accès illimité</li>
+            <li><i class="fas fa-check text-green-500 mr-2"></i> Cours illimités</li>
+            <li><i class="fas fa-check text-green-500 mr-2"></i> 2 coachings</li>
+            <li><i class="fas fa-check text-green-500 mr-2"></i> Sauna & hammam</li>
+          </ul>
+          <a href="#" class="block text-center bg-[#004e92] text-white hover:bg-[#003a6e] font-bold py-3 rounded-full transition shadow-lg">Souscrire</a>
+        </div>
+        <!-- Semestriel -->
+        <div class="bg-gray-50 rounded-3xl p-8 border border-gray-200 hover:shadow-xl transition hover:-translate-y-2 animate-on-scroll animate-fade-up delay-3">
+          <h3 class="text-2xl font-bold mb-2">Semestriel</h3>
+          <p class="text-gray-500 mb-6">Flexibilité 6 mois</p>
+          <div class="text-4xl font-extrabold mb-6">42€<span class="text-lg font-normal text-gray-500">/mois</span></div>
+          <ul class="space-y-3 mb-8 text-gray-600">
+            <li><i class="fas fa-check text-green-500 mr-2"></i> Accès toutes plages</li>
+            <li><i class="fas fa-check text-green-500 mr-2"></i> Cours inclus</li>
+            <li><i class="fas fa-check text-green-500 mr-2"></i> 1 coaching</li>
+            <li><i class="fas fa-check text-green-500 mr-2"></i> Sauna week-end</li>
+          </ul>
+          <a href="#" class="block text-center bg-white border-2 border-[#004e92] text-[#004e92] hover:bg-[#004e92] hover:text-white font-bold py-3 rounded-full transition">Souscrire</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer id="contact" class="bg-gray-900 text-gray-300 py-12 md:py-16">
+    <div class="container mx-auto px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8">
+        <!-- Coordonnées -->
+        <div class="text-center md:text-left">
+          <div class="flex items-center justify-center md:justify-start gap-2 mb-4">
+            <span class="text-xl font-bold text-white">SmartClub Pro</span>
+          </div>
+          <p class="text-sm flex items-center justify-center md:justify-start gap-2"><i class="fas fa-map-marker-alt text-[#FF8C00] w-4"></i> 01 bis, route de Matadi, Ngaliema, Kinshasa</p>
+          <p class="text-sm mt-2 flex items-center justify-center md:justify-start gap-2"><i class="fas fa-phone-alt text-[#FF8C00] w-4"></i> +243 979710633</p>
+          <p class="text-sm flex items-center justify-center md:justify-start gap-2"><i class="fas fa-envelope text-[#FF8C00] w-4"></i> contact@smartclubpro.cd</p>
+        </div>
+        <!-- Horaires -->
+        <div class="text-center">
+          <h4 class="text-white font-bold text-lg mb-4">Horaires</h4>
+          <ul class="space-y-2 text-sm">
+            <li><span class="font-medium">Lun-Ven :</span> 6h – 23h</li>
+            <li><span class="font-medium">Sam :</span> 8h – 21h</li>
+            <li><span class="font-medium">Dim :</span> 8h – 20h</li>
+          </ul>
+        </div>
+        <!-- Réseaux -->
+        <div class="text-center md:text-right">
+          <h4 class="text-white font-bold text-lg mb-4">Suivez-nous</h4>
+          <div class="flex justify-center md:justify-end gap-5 text-3xl">
+            <a href="#" class="hover:text-[#FF8C00] transition transform hover:scale-110"><i class="fab fa-facebook"></i></a>
+            <a href="#" class="hover:text-[#FF8C00] transition transform hover:scale-110"><i class="fab fa-instagram"></i></a>
+            <a href="#" class="hover:text-[#FF8C00] transition transform hover:scale-110"><i class="fab fa-whatsapp"></i></a>
+          </div>
+          <p class="text-xs text-gray-500 mt-6">Développé par Smart IT Solution</p>
+        </div>
+      </div>
+      <hr class="border-gray-800 my-8">
+      <p class="text-xs text-center text-gray-500">© 2025 SmartClub Pro – Tous droits réservés.</p>
+    </div>
+  </footer>
+
+  <!-- MODALES (Inscription & Connexion) -->
+  <!-- Overlay unique pour les deux modales -->
+  <div id="modalOverlay" class="modal-overlay">
+    <div class="modal-card relative">
+      <!-- Bouton fermeture -->
+      <button id="closeModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-xl"><i class="fas fa-times"></i></button>
+      
+      <!-- Modale Inscription (2 étapes) -->
+      <div id="registerModal" class="modal-step">
+        <h2 class="text-2xl font-bold mb-4 gradient-text">Inscription</h2>
+        
+        <!-- ÉTAPE 1 : Saisie numéro client -->
+        <div id="registerStep1">
+          <p class="text-gray-600 mb-4">Entrez votre numéro de client :</p>
+          <input 
+            type="text" 
+            id="clientNumber" 
+            placeholder="Ex: 123456" 
+            class="w-full p-3 border border-gray-300 rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-[#004e92]"
+          >
+          <button 
+            id="checkClientBtn" 
+            class="w-full bg-[#004e92] text-white font-semibold py-3 rounded-xl hover:bg-[#003a6e] transition"
+          >
+            Vérifier
+          </button>
+        </div>
+        
+        <!-- ÉTAPE 2 : Création mot de passe -->
+        <div id="registerStep2" style="display: none;">
+          <p class="text-gray-600 mb-4">Créez votre mot de passe :</p>
+          <input 
+            type="password" 
+            id="password1" 
+            placeholder="Mot de passe" 
+            class="w-full p-3 border border-gray-300 rounded-xl mb-3 focus:outline-none focus:ring-2 focus:ring-[#004e92]"
+          >
+          <input 
+            type="password" 
+            id="password2" 
+            placeholder="Confirmer mot de passe" 
+            class="w-full p-3 border border-gray-300 rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-[#004e92]"
+          >
+          <button 
+            id="createAccountBtn" 
+            class="w-full bg-[#FF8C00] text-white font-semibold py-3 rounded-xl hover:bg-orange-600 transition"
+          >
+            Créer mon compte
+          </button>
+        </div>
+        
+        <!-- Message d'erreur -->
+        <p id="registerError" class="text-red-500 text-sm mt-2 hidden"></p>
+      </div>
+
+      <!-- Modale Connexion (désactivée) -->
+      <div id="loginModal" class="modal-step" style="display: none;">
+        <h2 class="text-2xl font-bold mb-4 gradient-text">Connexion</h2>
+        <input type="text" id="loginClientNumber" placeholder="Numéro client" class="w-full p-3 border border-gray-300 rounded-xl mb-3 focus:outline-none focus:ring-2 focus:ring-[#004e92]">
+        <input type="password" id="loginPassword" placeholder="Mot de passe" class="w-full p-3 border border-gray-300 rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-[#004e92]">
+        <button id="loginSubmitBtn" class="w-full bg-[#004e92] text-white font-semibold py-3 rounded-xl hover:bg-[#003a6e] transition">Se connecter</button>
+        <p id="loginError" class="text-red-500 text-sm mt-2 hidden"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script principal -->
+  <script src="{% static 'js/script_accueil.js' %}"></script>
+</body>
+</html>
