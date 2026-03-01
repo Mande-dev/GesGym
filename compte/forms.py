@@ -26,23 +26,36 @@ class CustomAuthenticationForm(AuthenticationForm):
         'inactive': "Ce compte est inactif.",
     }
 
+
 class StaffCreationForm(forms.ModelForm):
+
+    ROLE_CHOICES_LIMITED = (
+        ("manager", "Manager"),
+        ("cashier", "Cashier"),
+        ("reception", "Agent Accueil"),
+    )
+
+    role = forms.ChoiceField(choices=ROLE_CHOICES_LIMITED)
+
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email', 'role']
 
+    def generate_username(self, first_name, last_name):
+        while True:
+            random_digits = random.randint(1000, 9999)
+            username = f"{first_name.lower()}{last_name.lower()}{random_digits}"
+            if not User.objects.filter(username=username).exists():
+                return username
+
     def save(self, commit=True, gym=None):
         user = super().save(commit=False)
 
-        # Générer username
-        random_digits = random.randint(1000, 9999)
-        username = f"{user.first_name.lower()}{user.last_name.lower()}{random_digits}"
+        user.username = self.generate_username(
+            user.first_name,
+            user.last_name
+        )
 
-        while User.objects.filter(username=username).exists():
-            random_digits = random.randint(1000, 9999)
-            username = f"{user.first_name.lower()}{user.last_name.lower()}{random_digits}"
-
-        user.username = username
         user.set_password("12345")
         user.gym = gym
 
