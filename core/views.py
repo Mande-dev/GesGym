@@ -48,6 +48,23 @@ def member_dashboard(request):
 
 
 @login_required
+@role_required(["admin", "reception", "manager"])
+def member_detail(request, member_id):
+
+    member = get_object_or_404(
+        Member.objects.select_related("user")
+        .prefetch_related("subscription_set"),
+        id=member_id,
+        gym=request.user.gym
+    )
+
+    return render(request, "core/member_list.html", {
+        "members": Member.objects.filter(gym=request.user.gym),
+        "selected_member": member
+    })
+
+
+@login_required
 @role_required(["admin", "reception"])
 def create_member(request):
 

@@ -164,7 +164,7 @@
                                         <div class="dropdown-menu dropdown-menu-end shadow">
 
                                             <!-- Voir -->
-                                            <a href="{% url 'core:member_dashboard' %}?member={{ member.id }}"
+                                            <a data-bs-toggle="modal" data-bs-target="#viewMemberModal" href="{% url 'core:member_detail' member.id %}"
                                             class="dropdown-item d-flex align-items-center">
                                                 <span class="material-icons me-2" style="font-size:18px;">
                                                     visibility
@@ -368,7 +368,7 @@
 </div>
 
 <!-- MODAL VOIR UN MEMBRE -->
-<div class="modal fade" id="viewMemberModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="viewMemberModal" tabindex="-1" aria-hidden="true" >
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
