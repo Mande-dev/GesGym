@@ -1,5 +1,6 @@
 #core/views.py
 from datetime import timedelta
+from django.http import HttpResponse
 from django.utils import timezone
 from django.contrib import messages
 from core.decorators import role_required
@@ -9,6 +10,7 @@ from .forms import MemberCreationForm, SubscriptionForm, SubscriptionPlanForm
 from .models import Member, Subscription, SubscriptionPlan
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
+from django.template.loader import render_to_string
 
 @login_required
 def superadmin_dashboard(request):
@@ -250,13 +252,33 @@ def edit_plan(request, plan_id):
         request.POST or None,
         instance=plan
     )
+    if request.method == "POST":
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Formule modifiée avec succès")
+            return redirect("core:subscription_plan_list")  # ou JsonResponse si tu veux rester sur la page
+        # Si erreur → on continue pour renvoyer le form avec erreurs
 
-    if form.is_valid():
-        form.save()
-        messages.success(request,"Plan modifié")
-        return redirect("core:subscription_plan_list")
+    # GET ou POST invalide → renvoyer le fragment du modal
+    context = {
+        'form': form,
+        'plan': plan,                   # pour afficher le nom dans le titre
+        'is_edit': True,
+    }
 
-    return render(request,"core/edit_plan.html",{"form":form})
+    html = render_to_string(
+        'core/partials/subscription_plan_form.html',  # ← nouveau partial
+        context,
+        request=request
+    )
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return HttpResponse(html)
+
+    # Fallback si accès direct (rare)
+    return render(request, 'core/subscription_plan_edit_full.html', context)
+
+
 
 @login_required
 @role_required(["admin","manager"])

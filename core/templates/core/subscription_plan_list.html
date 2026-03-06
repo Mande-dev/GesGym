@@ -170,7 +170,7 @@
                             <h2 class="fw-bold mb-3">
                             {{ plan.price }} CDF
                             <small class="fs-6 fw-normal text-muted">
-                            / {{ plan.duration_days }} jours
+                            / {{ plan.duration_days }} j
                             </small>
                             </h2>
 
@@ -207,16 +207,13 @@
 
                             <div class="d-flex gap-2">
 
-                            <a href="{% url 'core:edit_subscription_plan' plan.id %}"
-                            class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addFormuleModal" >
-
-                            <span class="material-icons me-1"
-                            style="font-size:16px;">
-                            edit
-                            </span>
-
-                            Éditer
-
+                            <a href="#" 
+                            class="btn btn-sm btn-outline-primary btn-edit-plan"
+                            data-plan-id="{{ plan.id }}"
+                            data-bs-toggle="modal" 
+                            data-bs-target="#addFormuleModal">
+                                <span class="material-icons me-1" style="font-size:16px;">edit</span>
+                                Éditer
                             </a>
 
 
@@ -530,33 +527,35 @@
                     <input type="hidden" id="formuleId" value="">
                     <div class="mb-3">
                         <label class="form-label">Nom de la formule</label>
-                        {{form.name}}
+                        {{ form.name|default:"" }}
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Durée (jours)</label>
-                        {{form.duration_days}}
+                        {{ form.duration_days|default:"" }}
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Prix (CDF)</label>
-                            {{form.price}}
+                            {{ form.price|default:"" }}
                         </div>
                     </div>
                     <div class="mb-3">
                         <div class="form-check mb-2">
-                            {{form.is_active}}
-                            <label class="form-check-label" for="is_active">Activer la formule</label>
+                            {{ form.is_active|default:"" }}
+                            <label class="form-check-label" for="id_is_active">Activer la formule</label>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        {{form.description}}
+                        {{ form.description|default:"" }}
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
-                <button type="submit" class="btn btn-primary" id="addFormuleBtn" form="newFormuleForm" >Créer la formule</button>
+                <button type="submit" class="btn btn-primary" id="addFormuleBtn" form="newFormuleForm">
+                    Créer la formule
+                </button>
             </div>
         </div>
     </div>
@@ -654,5 +653,60 @@
 
 {% block extra_js %}
 <script src="{% static 'js/script_abonnements.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Écouteur global de fermeture (une fois seulement)
+    const modalEl = document.getElementById('addFormuleModal');
+    modalEl.addEventListener('hidden.bs.modal', function () {
+        // Force le reset du body scroll
+        document.body.classList.remove('modal-open');
+        document.body.style.paddingRight = '';
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        
+        console.log('Modal fermé → body scroll restauré'); // pour debug
+    });
+
+    // Pour les boutons Éditer
+    document.querySelectorAll('.btn-edit-plan').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.preventDefault();
+            const planId = btn.dataset.planId;
+            const url = `/core/subscription-plans/edit/${planId}/`;  // adapte si besoin
+
+            // Optionnel : loader pendant fetch
+            const modalContent = modalEl.querySelector('.modal-content');
+            modalContent.innerHTML = `
+                <div class="modal-body text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p>Chargement...</p>
+                </div>
+            `;
+
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('Erreur');
+                return r.text();
+            })
+            .then(html => {
+                // Remplace proprement
+                modalContent.innerHTML = html;  // ou .replaceChildren() + insertAdjacentHTML
+                
+                // Ré-instancie si besoin (souvent pas nécessaire avec l'écouteur hidden)
+                // bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Erreur chargement édition.');
+            });
+        });
+    });
+});
+</script>
 
 {% endblock %}
