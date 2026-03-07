@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h4>Historique des caisses</h4>
+
+<div class="card mt-3">
+
+<table class="table">
+
+<thead>
+
+<tr>
+<th>Session</th>
+<th>Ouverture</th>
+<th>Fermeture</th>
+<th>Caissier</th>
+<th>Total réel</th>
+<th>Différence</th>
+<th></th>
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for r in registers %}
+
+<tr>
+
+<td>{{ r.session_code }}</td>
+
+<td>{{ r.opened_at|date:"d/m/Y H:i" }}</td>
+
+<td>{{ r.closed_at|date:"d/m/Y H:i" }}</td>
+
+<td>{{ r.opened_by }}</td>
+
+<td>{{ r.closing_amount }} CDF</td>
+
+<td>
+
+{% if r.difference > 0 %}
+<span class="text-success">+{{ r.difference }}</span>
+{% elif r.difference < 0 %}
+<span class="text-danger">{{ r.difference }}</span>
+{% else %}
+0
+{% endif %}
+
+</td>
+
+<td>
+
+<a href="{% url 'core:register_detail' r.id %}"
+class="btn btn-sm btn-light">
+
+<span class="material-icons">visibility</span>
+
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% endblock %}

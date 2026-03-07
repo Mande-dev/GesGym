@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h4>Session {{ register.session_code }}</h4>
+
+<p>
+Ouvert par : {{ register.opened_by }} <br>
+Ouverture : {{ register.opened_at }} <br>
+Fermeture : {{ register.closed_at }}
+</p>
+
+<div class="card">
+
+<table class="table">
+
+<thead>
+<tr>
+<th>Date</th>
+<th>Type</th>
+<th>Client</th>
+<th>Montant</th>
+<th>Mode</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for p in payments %}
+
+<tr>
+
+<td>{{ p.created_at|date:"d/m/Y H:i" }}</td>
+
+<td>
+{% if p.type == "in" %}
+<span class="text-success">Entrée</span>
+{% else %}
+<span class="text-danger">Sortie</span>
+{% endif %}
+</td>
+
+<td>
+
+{% if p.member %}
+{{ p.member.first_name }} {{ p.member.last_name }}
+{% else %}
+Décaissement
+{% endif %}
+
+</td>
+
+<td>{{ p.amount }} CDF</td>
+
+<td>{{ p.get_method_display }}</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% endblock %}

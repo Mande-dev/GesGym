@@ -88,7 +88,13 @@
                         <span class="material-icons text-primary">account_balance_wallet</span>
                         <h6 class="text-muted mb-0">Total Caisse CDF</h6>
                     </div>
-                    <h3 id="totalUSD">{{ today_total }} CDF</h3>
+                    <h3 id="totalUSD">
+                        {% if register %}
+                            {{ today_total }}
+                        {% else %}
+                            0
+                        {% endif %} CDF
+                    </h3>
                 </div>
             </div>
         </div>
@@ -100,7 +106,13 @@
                         <span class="material-icons text-success">trending_up</span>
                         <h6 class="text-muted mb-0">Entrées aujourd'hui</h6>
                     </div>
-                    <h3 id="todayEntries">{{ today_entries }} CDF</h3>
+                    <h3 id="todayEntries">
+                        {% if register %}
+                            {{ today_entries }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </h3>
                 </div>
             </div>
         </div>
@@ -111,7 +123,13 @@
                         <span class="material-icons text-warning">trending_down</span>
                         <h6 class="text-muted mb-0">Sorties aujourd'hui</h6>
                     </div>
-                    <h3 id="todayExits">{{ today_exits }} CDF</h3>
+                    <h3 id="todayExits">
+                        {% if register %}
+                            {{ today_exits }}
+                        {% else %}
+                            0
+                        {% endif %} CDF
+                    </h3>
                 </div>
             </div>
         </div>

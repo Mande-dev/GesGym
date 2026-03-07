@@ -32,4 +32,16 @@ urlpatterns = [
     
     path("payment-previous-step/<int:step>/", views.payment_previous_step, name="payment_previous_step"),
     
+    path(
+    "register-history/",
+    views.register_history,
+    name="register_history"
+),
+
+    path(
+        "register/<int:register_id>/",
+        views.register_detail,
+        name="register_detail"
+    ),
+    
 ]

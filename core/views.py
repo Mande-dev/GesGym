@@ -521,25 +521,35 @@ def cashier_dashboard(request):
         gym=gym,
         is_active=True
     )
-    payments = Payment.objects.filter(
-        gym=gym, cash_register=register
-    ).select_related("member","subscription").order_by("-created_at")[:20]
+    if register:
 
-    entries_today = Payment.objects.filter(gym=gym,
-    cash_register=register,
-    type="in",
-    status="success"
-    ).aggregate(total=Sum("amount"))["total"] or 0
+        payments = Payment.objects.filter(
+            gym=gym,
+            cash_register=register
+        ).select_related("member","subscription").order_by("-created_at")[:20]
 
+        entries_today = Payment.objects.filter(
+            gym=gym,
+            cash_register=register,
+            type="in",
+            status="success"
+        ).aggregate(total=Sum("amount"))["total"] or 0
 
-    exits_today = Payment.objects.filter(gym=gym,
-        cash_register=register,
-        type="out",
-        status="success"
-    ).aggregate(total=Sum("amount"))["total"] or 0
+        exits_today = Payment.objects.filter(
+            gym=gym,
+            cash_register=register,
+            type="out",
+            status="success"
+        ).aggregate(total=Sum("amount"))["total"] or 0
 
+        cash_total = entries_today - exits_today
 
-    cash_total = entries_today - exits_today
+    else:
+
+        payments = []
+        entries_today = 0
+        exits_today = 0
+        cash_total = 0
     return render(request, "core/cashier.html", {
         "members": members,
         "plans": plans,
@@ -621,4 +631,36 @@ def close_register(request, register_id):
         "exits": exits
     })
 
+#vue historique des caisses
+@login_required
+@role_required(["admin", "manager"])
+def register_history(request):
 
+    registers = CashRegister.objects.filter(
+        gym=request.user.gym,
+        is_closed=True
+    ).order_by("-closed_at")
+
+    return render(request, "core/register_history.html", {
+        "registers": registers
+    })
+
+#vue détail d'une session de caisse
+@login_required
+@role_required(["admin", "manager"])
+def register_detail(request, register_id):
+
+    register = get_object_or_404(
+        CashRegister,
+        id=register_id,
+        gym=request.user.gym
+    )
+
+    payments = Payment.objects.filter(
+        cash_register=register
+    ).select_related("member", "subscription")
+
+    return render(request, "core/register_detail.html", {
+        "register": register,
+        "payments": payments
+    })
