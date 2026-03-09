@@ -164,7 +164,7 @@
                                         <div class="dropdown-menu dropdown-menu-end shadow">
 
                                             <!-- Voir -->
-                                            <a data-bs-toggle="modal" data-bs-target="#viewMemberModal" href="{% url 'core:member_detail' member.id %}"
+                                            <a onclick="openMemberModal({{ member.id }})"
                                             class="dropdown-item d-flex align-items-center">
                                                 <span class="material-icons me-2" style="font-size:18px;">
                                                     visibility
@@ -350,13 +350,6 @@
                             </label>
                             {{ form.address }}
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label d-flex align-items-center gap-1">
-                                <span class="material-icons" style="font-size:18px;">warning</span>Statut d'abonnement
-                            </label>
-                            {{ form.status }}
-                        </div>
-                        
                     </div>
                 </form>
             </div>
@@ -384,6 +377,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                
                 <div class="member-compact-card mb-4">
                     <div class="row">
                         <div class="col-md-2">
@@ -394,20 +388,20 @@
                         <div class="col-md-6">
                             <p class="mb-1 fs-12 text-muted">
                                 <span class="material-icons" style="font-size:14px;">tag</span> 
-                                <span id="viewMemberId">SG-00001</span>
+                                <span id="viewMemberId">{{ member.id }}</span>
                             </p>
-                            <h4 id="viewMemberName">Jean Dupont</h4>
+                            <h4 id="viewMemberName">{{ member.first_name }} {{ member.last_name }}</h4>
                             <p class="mb-1">
                                 <span class="material-icons" style="font-size:14px;">phone</span> 
-                                <span id="viewMemberPhone">+243 81 234 5678</span>
+                                <span id="viewMemberPhone">{{ member.phone }}</span>
                             </p>
                             <p class="mb-0">
                                 <span class="material-icons" style="font-size:14px;">email</span> 
-                                <span id="viewMemberEmail">jean.d@email.com</span>
+                                <span id="viewMemberEmail">{{ member.email }}</span>
                             </p>
                         </div>
                         <div class="col-md-4 text-end">
-                            <div class="badge-actif mb-2" id="viewMemberStatus">Actif</div>
+                            <div class="badge-actif mb-2" id="viewMemberStatus">{{member.computed_status}}</div>
                             <div>
                                 <button class="btn btn-sm btn-light" onclick="printQRCode()">
                                     <span class="material-icons" style="font-size:18px;">qr_code</span>
@@ -419,6 +413,7 @@
                         </div>
                     </div>
                 </div>
+                
                 
                 <ul class="nav nav-tabs" id="memberTabs" role="tablist">
                     <li class="nav-item">
@@ -448,16 +443,16 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <table class="table table-borderless">
-                                    <tr><td class="fw-semibold">Formule :</td><td id="viewSubscriptionType">12 mois</td></tr>
-                                    <tr><td class="fw-semibold">Date d'inscription :</td><td id="viewStartDate">01/01/2024</td></tr>
-                                    <tr><td class="fw-semibold">Date d'expiration :</td><td id="viewExpiryDate">31/12/2024</td></tr>
+                                    <tr><td class="fw-semibold">Formule :</td><td id="viewSubscriptionType">{{ member.subscription.plan.name }}</td></tr>
+                                    <tr><td class="fw-semibold">Date d'inscription :</td><td id="viewStartDate">{{ member.start_date|date:"d/m/Y" }}</td></tr>
+                                    <tr><td class="fw-semibold">Date d'expiration :</td><td id="viewExpiryDate">{{ member.expiry_date|date:"d/m/Y" }}</td></tr>
                                 </table>
                             </div>
                             <div class="col-md-6">
                                 <table class="table table-borderless">
-                                    <tr><td class="fw-semibold">Prix :</td><td id="viewPrice">420 $</td></tr>
-                                    <tr><td class="fw-semibold">Payé :</td><td id="viewPaid">420 $</td></tr>
-                                    <tr><td class="fw-semibold">Reste :</td><td id="viewRemaining">0 $</td></tr>
+                                    <tr><td class="fw-semibold">Prix :</td><td id="viewPrice">{{ member.subscription_price }} $</td></tr>
+                                    <tr><td class="fw-semibold">Payé :</td><td id="viewPaid">{{ member.amount_paid }} $</td></tr>
+                                    <tr><td class="fw-semibold">Reste :</td><td id="viewRemaining">{{ member.amount_remaining }} $</td></tr>
                                 </table>
                             </div>
                         </div>
@@ -566,12 +561,25 @@
 <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 
-{% if step > 1 %}
+
 <script>
-document.addEventListener("DOMContentLoaded", function(){
-    var modal = new bootstrap.Modal(document.getElementById('paymentModal'));
-    modal.show();
-});
+function openMemberModal(memberId) {
+
+    fetch(`/core/member/${memberId}/`)
+    .then(response => response.json())
+    .then(data => {
+
+        document.getElementById("viewMemberId").innerText = data.id
+        document.getElementById("viewMemberName").innerText = data.first_name + " " + data.last_name
+        document.getElementById("viewMemberPhone").innerText = data.phone
+        document.getElementById("viewMemberEmail").innerText = data.email
+        document.getElementById("viewMemberStatus").innerText = data.status
+
+        let modal = new bootstrap.Modal(document.getElementById('viewMemberModal'))
+        modal.show()
+
+    })
+}
 </script>
-{% endif %}
+
 {% endblock %}

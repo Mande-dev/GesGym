@@ -33,27 +33,6 @@ def manager_dashboard(request):
 
 
 @login_required
-def cancel_payment_process(request):
-
-    request.session.pop("member_id", None)
-    request.session.pop("plan_id", None)
-
-    return redirect("core:cashier_dashboard")
-
-@login_required
-def payment_previous_step(request, step):
-
-    if step == 1:
-        request.session.pop("member_id", None)
-
-    if step == 2:
-        request.session.pop("plan_id", None)
-
-    request.session["wizard_step"] = step
-
-    return redirect("core:cashier_dashboard")
-
-@login_required
 @role_required(["reception"])
 def reception_dashboard(request):
     gym = request.gym
@@ -74,16 +53,21 @@ def member_dashboard(request):
 def member_detail(request, member_id):
 
     member = get_object_or_404(
-        Member.objects.select_related("user")
-        .prefetch_related("subscription_set"),
+        Member.objects.select_related("user"),
         id=member_id,
         gym=request.user.gym
     )
 
-    return render(request, "core/member_list.html", {
-        "members": Member.objects.filter(gym=request.user.gym),
-        "selected_member": member
-    })
+    data = {
+        "id": member.id,
+        "first_name": member.first_name,
+        "last_name": member.last_name,
+        "phone": member.phone,
+        "email": member.email,
+        "status": member.status
+    }
+
+    return JsonResponse(data)
 
 
 @login_required
@@ -123,7 +107,7 @@ def member_list(request):
     if request.user.role not in ["admin", "reception", "manager"]:
         raise PermissionDenied
 
-    members = Member.objects.filter(gym=request.user.gym).select_related("user").prefetch_related("subscription_set")
+    members = Member.objects.filter(gym=request.user.gym).select_related("user").prefetch_related("subscription_set__plan")
 
     form = MemberCreationForm()
     

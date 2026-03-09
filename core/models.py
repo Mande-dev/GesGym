@@ -44,6 +44,23 @@ class Member(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     @property
+    def active_subscription(self):
+        return self.subscription_set.filter(
+            is_active=True
+        ).select_related("plan").first()
+    @property
+    def expiration_date(self):
+        sub = self.active_subscription
+        return sub.end_date if sub else None
+    @property
+    def subscription_type(self):
+        sub = self.active_subscription
+        return sub.plan.name if sub else "Aucun"
+    @property
+    def last_access(self):
+        log = self.accesslog_set.order_by("-check_in_time").first()
+        return log.check_in_time if log else None
+    @property
     def computed_status(self):
         if self.status == "suspended":
             return "suspended"
@@ -59,6 +76,13 @@ class Member(models.Model):
             return "active"
 
         return "expired"
+    @property
+    def days_remaining(self):
+
+        if not self.expiration_date:
+            return None
+
+        return (self.expiration_date - timezone.now().date()).days
     
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
