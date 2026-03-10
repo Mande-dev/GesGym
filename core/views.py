@@ -340,11 +340,98 @@ def reports_dashboard(request):
 
     return render(request, "core/rapports.html", context)
 
+
 @login_required
-@role_required(["admin"])
+@role_required(["admin", "manager"])
 def admin_dashboard(request):
-    gym = request.gym
-    return render(request, 'core/admin.html', {'gym': gym})
+
+    gym = request.user.gym
+    today = now().date()
+
+    # ======================
+    # MEMBRES
+    # ======================
+
+    total_members = Member.objects.filter(gym=gym).count()
+
+    active_members = Member.objects.filter(
+        gym=gym,
+        subscription__is_active=True
+    ).distinct().count()
+
+    expired_members = Member.objects.filter(
+        gym=gym,
+        subscription__is_active=False
+    ).distinct().count()
+
+    # nouveaux ce mois
+    current_month = today.month
+    current_year = today.year
+
+    new_members_month = Member.objects.filter(
+        gym=gym,
+        created_at__year=current_year,
+        created_at__month=current_month
+    ).count()
+
+    # ======================
+    # REVENUS
+    # ======================
+
+    payments_today = Payment.objects.filter(
+        gym=gym,
+        created_at__date=today
+    )
+
+    daily_revenue = payments_today.aggregate(
+        total=Sum("amount")
+    )["total"] or 0
+
+    monthly_revenue = Payment.objects.filter(
+        gym=gym,
+        created_at__year=current_year,
+        created_at__month=current_month
+    ).aggregate(
+        total=Sum("amount")
+    )["total"] or 0
+
+    # ======================
+    # ACCES
+    # ======================
+
+    today_checkins = AccessLog.objects.filter(
+        member__gym=gym,
+        check_in_time__date=today,
+        access_granted=True
+    ).count()
+
+    # ======================
+    # EXPIRATIONS
+    # ======================
+
+    expiry_soon = Subscription.objects.filter(
+        member__gym=gym,
+        end_date__gte=today,
+        end_date__lte=today + timedelta(days=7)
+    ).count()
+
+    context = {
+
+        "total_members": total_members,
+        "active_members": active_members,
+        "expired_members": expired_members,
+
+        "daily_revenue": daily_revenue,
+        "monthly_revenue": monthly_revenue,
+
+        "new_members_month": new_members_month,
+
+        "today_checkins": today_checkins,
+
+        "expiry_soon": expiry_soon,
+    }
+
+    return render(request, "core/admin.html", context)
 
 
 #vue (scanner + pointage manuel)
