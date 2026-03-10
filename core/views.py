@@ -414,6 +414,110 @@ def admin_dashboard(request):
         end_date__gte=today,
         end_date__lte=today + timedelta(days=7)
     ).count()
+    
+    # ======================
+    # REPARTITION FORMULES
+    # ======================
+
+    plans_stats = Subscription.objects.filter(
+        member__gym=gym,
+        is_active=True
+    ).values(
+        "plan__name"
+    ).annotate(
+        total=Count("id")
+    ).order_by("-total")
+
+    total_subscriptions = Subscription.objects.filter(
+        member__gym=gym,
+        is_active=True
+    ).count()
+
+
+    # ======================
+    # FREQUENTATION SEMAINE
+    # ======================
+
+    start_week = today - timedelta(days=today.weekday())
+
+    attendance_week = []
+
+    days = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"]
+
+    for i in range(7):
+
+        day = start_week + timedelta(days=i)
+
+        count = AccessLog.objects.filter(
+            member__gym=gym,
+            check_in_time__date=day,
+            access_granted=True
+        ).count()
+
+        attendance_week.append({
+            "day": days[i],
+            "count": count
+        })
+
+
+    # ======================
+    # DERNIERS PAIEMENTS
+    # ======================
+
+    recent_payments = Payment.objects.filter(
+        gym=gym
+    ).select_related(
+        "member"
+    ).order_by("-created_at")[:5]
+    
+    # ======================
+    # ALERTES EXPIRATION
+    # ======================
+
+    expiry_7_days = Subscription.objects.filter(
+        member__gym=gym,
+        end_date=today + timedelta(days=7),
+        is_active=True
+    ).count()
+
+    expiry_3_days = Subscription.objects.filter(
+        member__gym=gym,
+        end_date=today + timedelta(days=3),
+        is_active=True
+    ).count()
+
+    expiry_1_day = Subscription.objects.filter(
+        member__gym=gym,
+        end_date=today + timedelta(days=1),
+        is_active=True
+    ).count()
+
+
+    # ======================
+    # PAIEMENTS EN ATTENTE
+    # ======================
+
+    pending_payments = Payment.objects.filter(
+        gym=gym,
+        status="pending"
+    )
+
+    pending_count = pending_payments.count()
+
+    pending_total = pending_payments.aggregate(
+        total=Sum("amount")
+    )["total"] or 0
+
+
+    # ======================
+    # DERNIERS ACCES
+    # ======================
+
+    recent_access = AccessLog.objects.filter(
+        member__gym=gym
+    ).select_related(
+        "member"
+    ).order_by("-check_in_time")[:5]
 
     context = {
 
@@ -429,6 +533,19 @@ def admin_dashboard(request):
         "today_checkins": today_checkins,
 
         "expiry_soon": expiry_soon,
+        "plans_stats": plans_stats,
+        "total_subscriptions": total_subscriptions,
+        "attendance_week": attendance_week,
+        "recent_payments": recent_payments,
+        
+        "expiry_7_days": expiry_7_days,
+        "expiry_3_days": expiry_3_days,
+        "expiry_1_day": expiry_1_day,
+
+        "pending_count": pending_count,
+        "pending_total": pending_total,
+
+        "recent_access": recent_access,
     }
 
     return render(request, "core/admin.html", context)
