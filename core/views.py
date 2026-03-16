@@ -16,6 +16,7 @@ from django.template.loader import render_to_string
 from django.db.models import Q, Count, Sum
 from django.core.paginator import Paginator
 from django.db.models.functions import ExtractMonth
+import calendar
 
 
 #######   MEMBRE  ######
@@ -347,6 +348,7 @@ def admin_dashboard(request):
 
     gym = request.user.gym
     today = now().date()
+    view = request.GET.get("view", "dashboard")
 
     # ======================
     # MEMBRES
@@ -412,7 +414,7 @@ def admin_dashboard(request):
     expiry_soon = Subscription.objects.filter(
         member__gym=gym,
         end_date__gte=today,
-        end_date__lte=today + timedelta(days=7)
+        end_date__lte=today + timedelta(days=15)
     ).count()
     
     # ======================
@@ -518,8 +520,53 @@ def admin_dashboard(request):
     ).select_related(
         "member"
     ).order_by("-check_in_time")[:5]
+    
+    # ======================
+    # FREQUENTATION SEMAINE (graph)
+    # ======================
+
+    week_labels = []
+    week_values = []
+
+    for day in attendance_week:
+        week_labels.append(day["day"])
+        week_values.append(day["count"])
+
+
+    # ======================
+    # REVENUS PAR MOIS (graph)
+    # ======================
+
+    monthly_sales = Payment.objects.filter(
+        gym=gym,
+        created_at__year=current_year
+    ).annotate(
+        month=ExtractMonth("created_at")
+    ).values("month").annotate(
+        total=Sum("amount")
+    ).order_by("month")
+
+    sales_labels = []
+    sales_values = []
+
+    for m in monthly_sales:
+        sales_labels.append(calendar.month_abbr[m["month"]])
+        sales_values.append(float(m["total"]))
+
+
+    # ======================
+    # REPARTITION ABONNEMENTS (graph)
+    # ======================
+
+    plan_labels = []
+    plan_values = []
+
+    for p in plans_stats:
+        plan_labels.append(p["plan__name"])
+        plan_values.append(p["total"])
 
     context = {
+        "context_view": view,
 
         "total_members": total_members,
         "active_members": active_members,
@@ -546,6 +593,15 @@ def admin_dashboard(request):
         "pending_total": pending_total,
 
         "recent_access": recent_access,
+        
+        "week_labels": week_labels,
+        "week_values": week_values,
+
+        "sales_labels": sales_labels,
+        "sales_values": sales_values,
+
+        "plan_labels": plan_labels,
+        "plan_values": plan_values,
     }
 
     return render(request, "core/admin.html", context)

@@ -14,9 +14,7 @@
     <div class="page-header-right ms-auto">
         <div class="page-header-right-items">
             <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-primary" onclick="showAide()">
-                    <span class="material-icons me-2" style="font-size: 18px;">help</span>Aide
-                </button>
+                
                 <button class="btn btn-sm btn-primary" type="button" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#addFormuleModal" >
                     <span class="material-icons me-2" style="font-size: 18px;">add</span>Nouvelle formule
                 </button>
@@ -25,92 +23,13 @@
     </div>
 </div>
 
-<!-- Navigation des onglets -->
-<ul class="nav nav-tabs mb-4 mx-2" id="subscriptionTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="formules-tab" data-bs-toggle="tab" data-bs-target="#formules" type="button" role="tab" onclick="showAbonnementsTab('formules')">
-            <span class="material-icons me-2">list_alt</span>Formules
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="promos-tab" data-bs-toggle="tab" data-bs-target="#promos" type="button" role="tab" onclick="showAbonnementsTab('promos')">
-            <span class="material-icons me-2">local_offer</span>Promotions
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="renouvellements-tab" data-bs-toggle="tab" data-bs-target="#renouvellements" type="button" role="tab" onclick="showAbonnementsTab('renouvellements')">
-            <span class="material-icons me-2">autorenew</span>Renouvellements
-        </button>
-    </li>
-</ul>
+
 
 <!-- Contenu des onglets -->
 <div class="tab-content" id="subscriptionTabsContent">
     <!-- Onglet FORMULES -->
     <div class="tab-pane fade show active" id="formules" role="tabpanel">
-        <!-- Statistiques des abonnements -->
-        <div class="row mb-4 mx-2">
-            <div class="col-md-3">
-                <div class="card stat-card" onclick="window.location.href='?filter=tous'">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between mb-2">
-                            <div>
-                                <span class="fs-12 fw-medium text-muted">Total abonnements</span>
-                                <h3 class="mb-0 fw-bold">1,247</h3>
-                            </div>
-                            <div class="stat-icon-box">
-                                <span class="material-icons" style="color: #3454d1;">calendar_month</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card stat-card" onclick="window.location.href='?filter=actifs'">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between mb-2">
-                            <div>
-                                <span class="fs-12 fw-medium text-muted">Actifs</span>
-                                <h3 class="mb-0 fw-bold">1,024</h3>
-                            </div>
-                            <div class="stat-icon-box">
-                                <span class="material-icons" style="color: #10b981;">check_circle</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card stat-card" onclick="window.location.href='?filter=expires'">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between mb-2">
-                            <div>
-                                <span class="fs-12 fw-medium text-muted">Expirés</span>
-                                <h3 class="mb-0 fw-bold">148</h3>
-                            </div>
-                            <div class="stat-icon-box">
-                                <span class="material-icons" style="color: #ef4444;">schedule</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card stat-card" onclick="window.location.href='?filter=suspendus'">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between mb-2">
-                            <div>
-                                <span class="fs-12 fw-medium text-muted">Suspendus</span>
-                                <h3 class="mb-0 fw-bold">75</h3>
-                            </div>
-                            <div class="stat-icon-box">
-                                <span class="material-icons" style="color: #f59e0b;">pause_circle</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        
 
         <!-- Grille des formules d'abonnement -->
         <div class="row mx-2">
@@ -119,21 +38,6 @@
                 <div class="card">
                     <div class="card-header">
                         <h5 class="card-title">Formules d'abonnement</h5>
-                        <div class="card-header-action">
-                            <div class="dropdown">
-                                <a href="javascript:void(0);" class="avatar-text avatar-sm" data-bs-toggle="dropdown">
-                                    <span class="material-icons">more_vert</span>
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-end">
-                                    <a href="javascript:void(0);" class="dropdown-item" onclick="exporterFormules()">
-                                        <span class="material-icons me-2">download</span>Exporter
-                                    </a>
-                                    <a href="javascript:void(0);" class="dropdown-item" onclick="dupliquerFormule()">
-                                        <span class="material-icons me-2">content_copy</span>Dupliquer
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                     <div class="card-body">
                         <div class="row g-4">

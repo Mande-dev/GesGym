@@ -9,18 +9,17 @@
 <div class="page-header">
     <div class="page-header-left d-flex align-items-center">
         <div class="page-header-title">
-            <h5 class="m-b-10">Tableau de bord - Vue d'ensemble</h5>
+            <h5 class="m-b-10">Tableau de bord</h5>
         </div>
     </div>
     <div class="page-header-right ms-auto">
         <div class="page-header-right-items">
-                <button class="btn btn-sm btn-primary" onclick="refreshDashboard()">
-                    <span class="material-icons me-2" style="font-size: 18px;">refresh</span>Actualiser
-                </button>
-            </div>
+               
+            
         </div>
     </div>
 </div>
+{% if context_view == "dashboard" %}
 <!-- [Main Content] start -->
 <div class="main-content" id="globalDashboardSection">
     <br>
@@ -35,7 +34,7 @@
                 <div class="card-body">
                         <div class="d-flex align-items-start justify-content-between mb-2">
                         <div>
-                            <span class="fs-12 fw-medium text-muted">Clients actifs</span>
+                            <span class="fs-12 fw-medium text-muted">Membres actifs</span>
                             <h3 class="mb-0 fw-bold" id="kpiActiveMembers">{{ active_members }}</h3>
                         </div>
                         <div class="stat-icon-box">
@@ -46,11 +45,11 @@
             </div>
         </div>
         <div class="col-xxl-3 col-md-6">
-            <div class="card stretch stretch-full stat-card" onclick="window.location.href='{% url 'core:member_list' %}?filter=expire'">
+            <div class="card stretch stretch-full stat-card" >
                 <div class="card-body">
                         <div class="d-flex align-items-start justify-content-between mb-2">
                         <div>
-                            <span class="fs-12 fw-medium text-muted">Abonnements expirés</span>
+                            <span class="fs-12 fw-medium text-muted">Membres Abonnements expirés</span>
                             <h3 class="mb-0 fw-bold" id="kpiExpiredMembers">{{ expired_members }}</h3>
                         </div>
                         <div class="stat-icon-box">
@@ -61,7 +60,7 @@
             </div>
         </div>
         <div class="col-xxl-3 col-md-6">
-            <div class="card stretch stretch-full stat-card" onclick="window.location.href='#?tab=caisse'">
+            <div class="card stretch stretch-full stat-card" >
                 <div class="card-body">
                         <div class="d-flex align-items-start justify-content-between mb-2">
                         <div>
@@ -76,7 +75,7 @@
             </div>
         </div>
         <div class="col-xxl-3 col-md-6">
-            <div class="card stretch stretch-full stat-card" onclick="window.location.href='{% url 'core:member_list' %}?filter=nouveau'">
+            <div class="card stretch stretch-full stat-card" >
                 <div class="card-body">
                         <div class="d-flex align-items-start justify-content-between mb-2">
                         <div>
@@ -176,9 +175,6 @@
             <div class="card stretch stretch-full">
                 <div class="card-header">
                     <h5 class="card-title">Répartition des abonnements</h5>
-                    <div class="card-header-action">
-                        <a href="#" class="btn btn-sm btn-light-brand">Gérer</a>
-                    </div>
                 </div>
                 <div class="card-body custom-card-action p-0">
                     <div class="table-responsive">
@@ -218,9 +214,7 @@
             <div class="card stretch stretch-full">
                 <div class="card-header">
                     <h5 class="card-title">Fréquentation - Cette semaine</h5>
-                    <div class="card-header-action">
-                        <a href="#?tab=historique" class="btn btn-sm btn-light-brand">Détail</a>
-                    </div>
+                    
                 </div>
                 <div class="card-body custom-card-action p-3">
                     <div class="vstack gap-3" id="attendanceStats">
@@ -254,9 +248,7 @@
             <div class="card stretch stretch-full">
                 <div class="card-header">
                     <h5 class="card-title">Derniers paiements enregistrés</h5>
-                    <div class="card-header-action">
-                        <a href="#" class="btn btn-sm btn-light-brand">Voir tout</a>
-                    </div>
+                    
                 </div>
                 <div class="card-body custom-card-action p-0">
                     <div class="table-responsive">
@@ -338,13 +330,7 @@
                                 <br><span class="fs-12 text-muted" id="expiry1day">{{ expiry_1_day }} abonnements expirent demain</span>
                             </div>
                         </div>
-                        <div class="p-3 border border-dashed rounded-2 d-flex align-items-center gap-3" onclick="window.location.href='#?filter=echoues'">
-                            <span class="material-icons text-primary">credit_card</span>
-                            <div class="flex-grow-1">
-                                <span class="fw-semibold">Paiements en ligne en attente</span>
-                                <br><span class="fs-12 text-muted" id="pendingPayments">{{ pending_count }} transactions ({{ pending_total }} CDF) en attente</span>
-                            </div>
-                        </div>
+                        
                         <hr>
                         <div><span class="fs-12 fw-semibold">Derniers accès</span></div>
                         <div class="vstack gap-2 fs-12" id="recentActivitiesList">
@@ -379,9 +365,154 @@
             </div>
         </div>
     </div>
+    {% endif %}
+    {% if context_view == "analytics" %}
+
+<div id="analyticsSection" class="p-3">
+
+<div class="row mb-4">
+
+<div class="col-lg-6">
+<div class="card">
+<div class="card-header">
+<h5>Fréquentation de la semaine</h5>
+</div>
+<div class="card-body">
+<canvas id="weeklyAttendanceChart"></canvas>
+</div>
+</div>
+</div>
+
+<div class="col-lg-6">
+<div class="card">
+<div class="card-header">
+<h5>Répartition des abonnements</h5>
+</div>
+<div class="card-body">
+<canvas id="planDistributionChart"></canvas>
+</div>
+</div>
+</div>
+
+</div>
+
+
+<div class="row">
+
+<div class="col-lg-12">
+<div class="card">
+<div class="card-header">
+<h5>Revenus mensuels</h5>
+</div>
+<div class="card-body">
+<canvas id="monthlyRevenueChart"></canvas>
+</div>
+</div>
+</div>
+
+</div>
+
+</div>
+
+{% endif %}
 <!-- [Main Content] end -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/script_dashboard.js' %}"></script>
+<script>
+
+let week_labels = {{ week_labels|safe }};
+let week_values = {{ week_values|safe }};
+
+const ctx1 = document.getElementById("weeklyAttendanceChart");
+
+if(ctx1){
+
+new Chart(ctx1,{
+type:"bar",
+data:{
+labels: week_labels,
+datasets:[{
+label:"Entrées",
+data: week_values,
+backgroundColor:"#3454d1"
+}]
+},
+options:{
+responsive:true,
+plugins:{legend:{display:false}}
+}
+})
+
+}
+
+</script>
+
+<script>
+
+let sales_labels = {{ sales_labels|safe }};
+let sales_values = {{ sales_values|safe }};
+
+const ctx2 = document.getElementById("monthlyRevenueChart");
+
+if(ctx2){
+
+new Chart(ctx2,{
+type:"line",
+data:{
+labels: sales_labels,
+datasets:[{
+label:"Revenus",
+data: sales_values,
+borderColor:"#10b981",
+backgroundColor:"rgba(16,185,129,0.15)",
+fill:true,
+tension:0.4
+}]
+},
+options:{
+responsive:true
+}
+})
+
+}
+
+</script>
+
+<script>
+
+let plan_labels = {{ plan_labels|safe }};
+let plan_values = {{ plan_values|safe }};
+
+const ctx3 = document.getElementById("planDistributionChart");
+
+if(ctx3){
+
+new Chart(ctx3,{
+type:"doughnut",
+data:{
+labels: plan_labels,
+datasets:[{
+data: plan_values,
+backgroundColor:[
+"#3454d1",
+"#10b981",
+"#f59e0b",
+"#ef4444",
+"#8b5cf6"
+]
+}]
+},
+options:{
+responsive:true
+}
+})
+
+}
+
+</script>
+
+
 {% endblock %}

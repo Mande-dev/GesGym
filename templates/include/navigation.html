@@ -27,8 +27,12 @@
                         <span class="nxl-arrow"><span class="material-icons">chevron_right</span></span>
                     </a>
                     <ul class="nxl-submenu">
-                        <li class="nxl-item" id="nav-dashboard-global"><a class="nxl-link" href="{% url 'core:admin_dashboard' %}">Vue d'ensemble</a></li>
-                        
+                        <li class="nxl-item" id="nav-dashboard-global"><a class="nxl-link" href="{% url 'core:admin_dashboard' %}?view=dashboard">Vue d'ensemble</a></li>
+                        <li class="nxl-item" id="nav-analytics">
+                            <a class="nxl-link" href="{% url 'core:admin_dashboard' %}?view=analytics">
+                                <span class="nxl-mtext">Vue analytique</span>
+                            </a>
+                        </li>
                     </ul>
                 </li>
 
