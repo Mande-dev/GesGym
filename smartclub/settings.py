@@ -40,6 +40,15 @@ INSTALLED_APPS = [
     'compte',
     'core.apps.CoreConfig',
     'organizations',
+    'members',
+    'subscriptions',
+    'pos',
+    'access',
+    'notifications',
+    'products',
+    'machines',
+    'coaching',
+    'rh',
 ]
 
 MIDDLEWARE = [

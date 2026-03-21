@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from organizations.models.gym import Gym
+from organizations.models import Gym
 
 
 class UserGymRole(models.Model):
