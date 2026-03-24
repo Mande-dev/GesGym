@@ -16,21 +16,15 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.shortcuts import render
 from django.urls import include, path
-
 from django.conf import settings
 from django.conf.urls.static import static
 
 
-def accueil (request):
-    return render(request, 'compte/accueil.html')
-
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', accueil, name='accueil'),
     path('compte/', include('compte.urls')),
-    path('core/', include('core.urls')),
+    path('', include('core.urls')),  # dashboard ici
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

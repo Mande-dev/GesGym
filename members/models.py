@@ -145,33 +145,3 @@ class Member(models.Model):
     
 
 
-class MemberAccessLog(models.Model):
-    """
-    Historique des accès du membre.
-    """
-
-    member = models.ForeignKey(
-        Member,
-        on_delete=models.CASCADE,
-        related_name="access_logs"
-    )
-
-    check_in_time = models.DateTimeField(auto_now_add=True)
-
-    access_granted = models.BooleanField(default=True)
-
-    device_used = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True
-    )
-
-    class Meta:
-
-        indexes = [
-
-            models.Index(fields=["member"]),
-
-            models.Index(fields=["check_in_time"]),
-            models.Index(fields=["member", "check_in_time"])
-        ]
