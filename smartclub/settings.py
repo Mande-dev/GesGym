@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'machines',
     'coaching',
     'rh',
+    'website',
 ]
 
 MIDDLEWARE = [

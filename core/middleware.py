@@ -1,18 +1,12 @@
 from django.core.exceptions import PermissionDenied
 from django.urls import resolve
 
-from organizations.models.gym import Gym
+from organizations.models import Gym
+
+from compte.models import UserGymRole
 
 
-class TenantMiddleware:
-    """
-    Middleware responsable de déterminer le gym actif
-    pour chaque requête.
-
-    Il injecte automatiquement :
-    - request.gym
-    - request.organization
-    """
+class GymMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -20,72 +14,19 @@ class TenantMiddleware:
     def __call__(self, request):
 
         request.gym = None
+        request.role = None
         request.organization = None
 
-        # Cas 1 : utilisateur connecté
         if request.user.is_authenticated:
 
-            # si utilisateur possède un gym
-            if hasattr(request.user, "gym") and request.user.gym:
+            role = UserGymRole.objects.filter(
+                user=request.user,
+                is_active=True
+            ).select_related("gym__organization").first()
 
-                request.gym = request.user.gym
-                request.organization = request.user.gym.organization
-
-        # Cas 2 : fallback via sous-domaine
-        if not request.gym:
-
-            host = request.get_host().split(":")[0]
-
-            subdomain = host.split(".")[0]
-
-            try:
-                gym = Gym.objects.select_related("organization").get(
-                    subdomain=subdomain
-                )
-
-                request.gym = gym
-                request.organization = gym.organization
-
-            except Gym.DoesNotExist:
-                pass
-
-        response = self.get_response(request)
-
-        return response
-class GymIsolationMiddleware:
-
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-
-        # Pages publiques autorisées
-        public_paths = [
-            '/',
-            '/compte/login/',
-            '/compte/logout/',
-            '/admin/login/',
-        ]
-
-        if request.path.startswith('/admin'):
-            return self.get_response(request)
-
-        if request.path in public_paths:
-            return self.get_response(request)
-
-        # Si non connecté → laisser passer
-        if not request.user.is_authenticated:
-            return self.get_response(request)
-
-        # Superadmin → accès global
-        if request.user.role == "superadmin":
-            request.gym = None
-            return self.get_response(request)
-
-        # Utilisateur normal → doit avoir une gym
-        if not request.user.gym:
-            raise PermissionDenied("Aucune salle associée.")
-
-        request.gym = request.user.gym
+            if role:
+                request.gym = role.gym
+                request.role = role.role
+                request.organization = role.gym.organization
 
         return self.get_response(request)
