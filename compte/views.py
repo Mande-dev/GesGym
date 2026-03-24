@@ -1,11 +1,10 @@
 # compte/views.py
-from django.contrib import messages
+from django.contrib.auth import logout
 from django.contrib.auth.views import LoginView
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
-
 from .forms import CustomAuthenticationForm
-from .models import User, UserGymRole
-from django.contrib.auth.decorators import login_required
+from .models import UserGymRole
 
 class CustomLoginView(LoginView):
     template_name = 'compte/login.html'
@@ -33,3 +32,10 @@ class CustomLoginView(LoginView):
 
         return reverse_lazy("core:dashboard")
         
+
+def logout_view(request):
+    """
+    Déconnexion propre de l'utilisateur
+    """
+    logout(request)
+    return redirect("compte:login")

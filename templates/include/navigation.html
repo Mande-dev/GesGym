@@ -5,14 +5,9 @@
         <div class="m-header">
             <a href="#" class="b-brand">
                 <h1 class="h3 mb-0 fw-bold logo-lg">
-                    <span style="color: #FF8C00;">SmartClub</span>
-                    <span style="color: #004e92;">Pro</span>
+                    <span style="color: #FF8C00;">{{ request.organization.name }}</span>
+                    <span style="color: #004e92;">{{ request.gym.name }}</span>
                 </h1>
-                <h6 class="mb-0 fw-bold logo-sm" style="display: none;">
-                    <span style="color: #FF8C00;">S</span>
-                    <span class="text-secondary">-</span>
-                    <span style="color: #004e92;">C</span>
-                </h6>
             </a>
         </div>
         <div class="navbar-content">
@@ -27,9 +22,9 @@
                         <span class="nxl-arrow"><span class="material-icons">chevron_right</span></span>
                     </a>
                     <ul class="nxl-submenu">
-                        <li class="nxl-item" id="nav-dashboard-global"><a class="nxl-link" href="#?view=dashboard">Vue d'ensemble</a></li>
+                        <li class="nxl-item" id="nav-dashboard-global"><a class="nxl-link" href="{% url 'core:dashboard' %}?view=dashboard">Vue d'ensemble</a></li>
                         <li class="nxl-item" id="nav-analytics">
-                            <a class="nxl-link" href="#?view=analytics">
+                            <a class="nxl-link" href="{% url 'core:dashboard' %}?view=analytics">
                                 <span class="nxl-mtext">Vue analytique</span>
                             </a>
                         </li>

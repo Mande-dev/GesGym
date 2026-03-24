@@ -4,5 +4,5 @@
 {% block page_titre %}Tableau de bord{% endblock %}
 
 {% block content %} 
-<h1>Bienvenue {{ request.user.username }} tu es {{ request.role }} - de la salle de sport {{ request.gym.name }} </h1>
+<h1>Bienvenue {{ request.user.username }}, tu es {{ request.role }} de la salle de sport {{ request.organization.name }} {{ request.gym.name }} </h1>
 {% endblock %}

@@ -82,7 +82,9 @@
                                 <div>
                                     <h6 class="text-dark mb-0">{{ user.first_name }} {{ user.last_name }}</h6>
                                     <span class="fs-12 fw-medium text-muted">{{ user.email }}</span>
-                                    <h6 class="text-dark mb-0"> Poste {{ request.role }}</h6>
+                                    <h6 class="text-dark mb-0">
+                                        {{ request.gym.name }} - {{ request.role|title }}
+                                    </h6>
                                 </div>
                             </div>
                         </div>
