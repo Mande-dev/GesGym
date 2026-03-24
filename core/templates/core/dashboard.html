@@ -1,8 +1,529 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends 'base.html' %} {% load static %} {% block page_titre %}Tableau de bord{% endblock %} {% block content %}
+<!-- [page-header] start (avec filtres) -->
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Tableau de bord</h5>
+        </div>
+    </div>
+    <div class="page-header-right ms-auto">
+        <div class="page-header-right-items">
 
-{% block page_titre %}Tableau de bord{% endblock %}
 
-{% block content %} 
-<h1>Bienvenue {{ request.user.username }}, tu es {{ request.role }} de la salle de sport {{ request.organization.name }} {{ request.gym.name }} </h1>
+        </div>
+    </div>
+</div>
+{% if context_view == "dashboard" %}
+<!-- [Main Content] start -->
+<div class="main-content" id="globalDashboardSection">
+    <br>
+    <div class="row">
+
+    </div>
+
+    <!-- Ligne 1: Statistiques clés (KPI) -->
+    <div class="row mb-3">
+        <div class="col-xxl-3 col-md-6">
+            <div class="card stretch stretch-full stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between mb-2">
+                        <div>
+                            <span class="fs-12 fw-medium text-muted">Membres actifs</span>
+                            <h3 class="mb-0 fw-bold" id="kpiActiveMembers">{{ active_members }}</h3>
+                        </div>
+                        <div class="stat-icon-box">
+                            <span class="material-icons" style="color: #3454d1;">group</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xxl-3 col-md-6">
+            <div class="card stretch stretch-full stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between mb-2">
+                        <div>
+                            <span class="fs-12 fw-medium text-muted">Membres expirés</span>
+                            <h3 class="mb-0 fw-bold" id="kpiExpiredMembers">{{ expired_members }}</h3>
+                        </div>
+                        <div class="stat-icon-box">
+                            <span class="material-icons" style="color: #ef4444;">schedule</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xxl-3 col-md-6">
+            <div class="card stretch stretch-full stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between mb-2">
+                        <div>
+                            <span class="fs-12 fw-medium text-muted">Recettes du jour</span>
+                            <h3 class="mb-0 fw-bold" id="kpiDailyRevenue">{{ daily_revenue|floatformat:0 }} CDF</h3>
+                        </div>
+                        <div class="stat-icon-box">
+                            <span class="material-icons" style="color: #10b981;">payments</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xxl-3 col-md-6">
+            <div class="card stretch stretch-full stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between mb-2">
+                        <div>
+                            <span class="fs-12 fw-medium text-muted">Nouveaux clients (mois) </span>
+                            <h3 class="mb-0 fw-bold" id="kpiNewMembers">{{ new_members_month }}</h3>
+                        </div>
+                        <div class="stat-icon-box">
+                            <span class="material-icons" style="color: #f59e0b;">person_add</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row g-3">
+        <div class="col-xxl-3 col-md-6">
+            <div class="card stretch stretch-full">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between mb-4">
+                        <div class="d-flex gap-4 align-items-center">
+                            <div class="stat-icon-box">
+                                <span class="material-icons" style="color:#3454d1; font-size:32px;">group</span>
+                            </div>
+                            <div>
+                                <div class="fs-4 fw-bold text-dark counter" id="totalMembers">{{ total_members }}</div>
+                                <h3 class="fs-13 fw-semibold">Total Membres</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="fs-12 text-muted">Actifs / Expirés</span>
+                        <span class="fs-12 text-dark fw-semibold" id="membersStats">{{ active_members }} / {{ expired_members }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xxl-3 col-md-6">
+            <div class="card stretch stretch-full">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between mb-4">
+                        <div class="d-flex gap-4 align-items-center">
+                            <div class="stat-icon-box">
+                                <span class="material-icons" style="color:#16a34a; font-size:32px;">payments</span>
+                            </div>
+                            <div>
+                                <div class="fs-4 fw-bold text-dark" id="monthlyRevenue">{{ monthly_revenue }} CDF</div>
+                                <h3 class="fs-13 fw-semibold">Revenu du mois</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xxl-3 col-md-6">
+            <div class="card stretch stretch-full">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between mb-4">
+                        <div class="d-flex gap-4 align-items-center">
+                            <div class="stat-icon-box">
+                                <span class="material-icons" style="color:#f59e0b; font-size:32px;">schedule</span>
+                            </div>
+                            <div>
+                                <div class="fs-4 fw-bold text-dark" id="expiringSoon">{{ expiry_soon }}</div>
+                                <h3 class="fs-13 fw-semibold">Expirent bientôt(15jrs)</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xxl-3 col-md-6">
+            <div class="card stretch stretch-full">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between mb-4">
+                        <div class="d-flex gap-4 align-items-center">
+                            <div class="stat-icon-box">
+                                <span class="material-icons" style="color:#4aef44; font-size:32px;">login</span>
+                            </div>
+                            <div>
+                                <div class="fs-4 fw-bold text-dark" id="todayCheckins">{{ today_checkins }}</div>
+                                <h3 class="fs-13 fw-semibold">Entrées aujourd'hui</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Ligne 3: Formules, Fréquentation, Paiements récents -->
+    <div class="row">
+        <div class="col-xxl-4">
+            <div class="card stretch stretch-full">
+                <div class="card-header">
+                    <h5 class="card-title">Répartition des abonnements</h5>
+                </div>
+                <div class="card-body custom-card-action p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr class="border-b">
+                                    <th>Formule</th>
+                                    <th>Nombre</th>
+                                    <th>%</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subscriptionTypesTableBody">
+
+                                {% for plan in plans_stats %}
+
+                                <tr>
+
+                                    <td>{{ plan.plan__name }}</td>
+
+                                    <td>{{ plan.total }}</td>
+
+                                    <td>
+                                        {% widthratio plan.total total_subscriptions 100 %}%
+                                    </td>
+
+                                </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xxl-4">
+            <div class="card stretch stretch-full">
+                <div class="card-header">
+                    <h5 class="card-title">Fréquentation - Cette semaine</h5>
+
+                </div>
+                <div class="card-body custom-card-action p-3">
+                    <div class="vstack gap-3" id="attendanceStats">
+
+                        {% for day in attendance_week %}
+
+                        <div class="d-flex justify-content-between align-items-center">
+
+                            <span>{{ day.day }}</span>
+
+                            <div class="d-flex align-items-center gap-3">
+
+                                <div class="progress" style="width: 150px; height: 8px;">
+                                    <div class="progress-bar progress-bar-success" style="width: {{ day.count }}%"></div>
+                                </div>
+
+                                <span class="fw-semibold">{{ day.count }} entrées</span>
+
+                            </div>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xxl-4">
+            <div class="card stretch stretch-full">
+                <div class="card-header">
+                    <h5 class="card-title">Derniers paiements enregistrés</h5>
+
+                </div>
+                <div class="card-body custom-card-action p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr class="border-b">
+                                    <th>Client</th>
+                                    <th>Montant</th>
+                                    <th>Méthode</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentPaymentsTableBody">
+
+                                {% for payment in recent_payments %}
+
+                                <tr>
+
+                                    <td>
+                                        {{ payment.member.first_name|default:"Decaissement" }} {{ payment.member.last_name|default:"" }}
+                                    </td>
+
+                                    <td>
+                                        {{ payment.amount }} CDF
+                                    </td>
+
+                                    <td>
+                                        {{ payment.method }}
+                                    </td>
+
+                                </tr>
+
+                                {% empty %}
+
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">
+                                        Aucun paiement
+                                    </td>
+                                </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Ligne 2: Alertes -->
+<div class="row">
+    <div class="col-xxl-12">
+        <div class="card stretch stretch-full">
+            <div class="card-header">
+                <h5 class="card-title">Alertes & Actions requises</h5>
+            </div>
+            <div class="card-body">
+                <div class="vstack gap-3">
+                    <div class="alert-card d-flex align-items-center gap-3" onclick="window.location.href='#">
+                        <span class="material-icons text-warning">warning</span>
+                        <div class="flex-grow-1">
+                            <span class="fw-semibold">Expiration J-7</span>
+                            <br><span class="fs-12 text-muted" id="expiry7days">{{ expiry_7_days }} abonnements expirent dans 7 jours</span>
+                        </div>
+                    </div>
+                    <div class="alert-card d-flex align-items-center gap-3">
+                        <span class="material-icons text-warning">warning</span>
+                        <div class="flex-grow-1">
+                            <span class="fw-semibold">Expiration J-3</span>
+                            <br><span class="fs-12 text-muted" id="expiry3days">{{ expiry_3_days }} abonnements expirent dans 3 jours</span>
+                        </div>
+                    </div>
+                    <div class="alert-card-danger d-flex align-items-center gap-3">
+                        <span class="material-icons text-danger">schedule</span>
+                        <div class="flex-grow-1">
+                            <span class="fw-semibold">Expiration J-1</span>
+                            <br><span class="fs-12 text-muted" id="expiry1day">{{ expiry_1_day }} abonnements expirent demain</span>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <div><span class="fs-12 fw-semibold">Derniers accès</span></div>
+                    <div class="vstack gap-2 fs-12" id="recentActivitiesList">
+
+                        {% for access in recent_access %}
+
+                        <div class="d-flex justify-content-between">
+
+                            <span>
+
+                        {% if access.access_granted %}
+                        <span class="material-icons text-success me-1" style="font-size:16px;">check_circle</span> {{ access.member.first_name }} {{ access.member.last_name }} - Accès autorisé {% else %}
+                            <span class="material-icons text-danger me-1" style="font-size:16px;">cancel</span> {{ access.member.first_name }} {{ access.member.last_name }} - Accès refusé {% endif %}
+
+                            </span>
+
+                            <span class="text-muted">
+                        {{ access.check_in_time|timesince }}
+                        </span>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %} {% if context_view == "analytics" %}
+
+<div id="analyticsSection" class="p-3">
+
+    <div class="row mb-4">
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Fréquentation de la semaine</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="weeklyAttendanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Répartition des abonnements</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="planDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="row">
+
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Revenus mensuels</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyRevenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+<!-- [Main Content] end -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %} {% block extra_js %}
+<script src="{% static 'js/script_dashboard.js' %}"></script>
+<script>
+    let week_labels = {
+        {
+            week_labels |
+                default: "[]" | safe
+        }
+    };
+
+    let week_values = {
+        {
+            week_values |
+                default: "[]" | safe
+        }
+    };
+
+    const ctx1 = document.getElementById("weeklyAttendanceChart");
+
+    if (ctx1) {
+
+        new Chart(ctx1, {
+            type: "bar",
+            data: {
+                labels: week_labels,
+                datasets: [{
+                    label: "Entrées",
+                    data: week_values,
+                    backgroundColor: "#3454d1"
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        })
+
+    }
+</script>
+
+<script>
+    let sales_labels = {
+        {
+            sales_labels | safe
+        }
+    };
+    let sales_values = {
+        {
+            sales_values | safe
+        }
+    };
+
+    const ctx2 = document.getElementById("monthlyRevenueChart");
+
+    if (ctx2) {
+
+        new Chart(ctx2, {
+            type: "line",
+            data: {
+                labels: sales_labels,
+                datasets: [{
+                    label: "Revenus",
+                    data: sales_values,
+                    borderColor: "#10b981",
+                    backgroundColor: "rgba(16,185,129,0.15)",
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true
+            }
+        })
+
+    }
+</script>
+
+<script>
+    let plan_labels = {
+        {
+            plan_labels | safe
+        }
+    };
+    let plan_values = {
+        {
+            plan_values | safe
+        }
+    };
+
+    const ctx3 = document.getElementById("planDistributionChart");
+
+    if (ctx3) {
+
+        new Chart(ctx3, {
+            type: "doughnut",
+            data: {
+                labels: plan_labels,
+                datasets: [{
+                    data: plan_values,
+                    backgroundColor: [
+                        "#3454d1",
+                        "#10b981",
+                        "#f59e0b",
+                        "#ef4444",
+                        "#8b5cf6"
+                    ]
+                }]
+            },
+            options: {
+                responsive: true
+            }
+        })
+
+    }
+</script>
+
+
 {% endblock %}
