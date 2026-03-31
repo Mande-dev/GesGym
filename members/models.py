@@ -127,6 +127,10 @@ class Member(models.Model):
 
         return (self.expiration_date - timezone.now().date()).days
 
+    def get_qr_data(self):
+        """Données qui seront encodées dans le QR Code"""
+        return str(self.qr_code)
+    
     class Meta:
         unique_together = ("gym", "qr_code"), ("gym", "phone"), ("gym", "email")
         indexes = [

@@ -2,7 +2,9 @@ import random
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
-from core.models import Member
+
+from compte.models import UserGymRole
+from .models import Member
 
 User = get_user_model()
 
@@ -27,9 +29,17 @@ def create_user_for_member(sender, instance, created, **kwargs):
         user = User.objects.create_user(
             username=username,
             password="12345",
-            role="member",
-            gym=instance.gym
+            first_name=instance.first_name,
+            last_name=instance.last_name,
+            email=instance.email or "",
+        )
+        
+        UserGymRole.objects.create(
+            user=user,
+            gym=instance.gym,
+            role="accountant",      # ou "member" si tu veux un rôle spécifique pour les membres
+            is_active=True
         )
 
         instance.user = user
-        instance.save()
+        instance.save(update_fields=['user'])

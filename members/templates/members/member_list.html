@@ -1,0 +1,923 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_titre %}Gestion des Membres{% endblock %}
+
+{% block content %}
+<!-- [ page-header ] start -->
+<div class="page-header mb-3">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title d-flex align-items-center gap-2">
+            <span class="material-icons text-primary" style="font-size:28px;">group</span>
+            <h5 class="m-b-10 mb-0" id="pageTitle">Gestion des Membres</h5>
+        </div>
+    </div>
+    <div class="page-header-right ms-auto">
+        <div class="page-header-right-items">
+            <div class="d-flex align-items-center gap-2">
+                <a href="javascript:void(0);" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+                    <span class="material-icons me-2" style="font-size:18px;">person_add</span>
+                    <span>Nouveau Membre</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- [ page-header ] end -->
+
+<!-- Vue principale : Liste des membres (contenu aligné sur une même largeur) -->
+<div id="membersListView" class="px-0 mx-2">
+
+    <!-- Filtres et recherche -->
+ <form method="get">
+
+<div class="card mb-4">
+
+<div class="card-body">
+
+<div class="d-flex align-items-center gap-2 mb-3">
+<span class="material-icons text-muted" style="font-size:20px;">filter_list</span>
+<span class="fw-semibold small text-muted">Filtres avancés</span>
+</div>
+
+<div class="row align-items-end g-3">
+
+<!-- Recherche -->
+
+<div class="col-md-4">
+
+<label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
+<span class="material-icons" style="font-size:16px;">search</span>Recherche
+</label>
+
+<div class="input-group">
+
+<span class="input-group-text">
+<span class="material-icons" style="font-size:18px;">search</span>
+</span>
+
+<input
+type="text"
+class="form-control"
+name="search"
+placeholder="Nom, téléphone, email..."
+value="{{ search }}"
+>
+
+</div>
+
+</div>
+
+<!-- Statut -->
+
+<div class="col-md-3">
+
+<label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
+<span class="material-icons" style="font-size:16px;">label_important</span>Statut
+</label>
+
+<select class="form-select" name="status">
+
+<option value="">Tous les statuts</option>
+
+<option value="active"
+{% if status == "active" %}selected{% endif %}>
+Actifs
+</option>
+
+<option value="expired"
+{% if status == "expired" %}selected{% endif %}>
+Expirés
+</option>
+
+<option value="suspended"
+{% if status == "suspended" %}selected{% endif %}>
+Suspendus
+</option>
+
+<option value="expiring"
+{% if status == "expiring" %}selected{% endif %}>
+Proche expiration
+</option>
+
+</select>
+
+</div>
+
+<!-- Formule -->
+
+<div class="col-md-3">
+
+<label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
+<span class="material-icons" style="font-size:16px;">event_available</span>Formule
+</label>
+
+<select class="form-select" name="plan">
+
+<option value="">Tous les abonnements</option>
+
+{% for plan in plans %}
+
+<option value="{{ plan.id }}"
+{% if plan_selected == plan.id|stringformat:"s" %}selected{% endif %}>
+{{ plan.name }}
+</option>
+
+{% endfor %}
+
+</select>
+
+</div>
+
+<!-- boutons -->
+
+<div class="col-md-2 d-flex gap-2">
+
+<button class="btn btn-primary w-100">
+Filtrer
+</button>
+
+<a href="{% url 'members:member_list' %}" class="btn btn-light-brand w-100">
+Réinitialiser
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</form>
+
+
+<!-- Liste des membres -->
+<div class="card stretch stretch-full">
+    <div class="card-header">
+        <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+            <span class="material-icons" style="font-size:22px;">format_list_bulleted</span>
+            Liste des membres
+        </h5>
+        <div class="card-header-action">
+            <div class="dropdown">
+                <a href="javascript:void(0);" class="avatar-text avatar-sm" data-bs-toggle="dropdown">
+                    <span class="material-icons" style="font-size:20px;">more_vert</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end">
+                    <a href="javascript:void(0);" class="dropdown-item" onclick="exportMembers()">
+                        <span class="material-icons me-2" style="font-size:18px;">download</span>Exporter
+                    </a>
+                    <a href="javascript:void(0);" class="dropdown-item" onclick="printMembers()">
+                        <span class="material-icons me-2" style="font-size:18px;">print</span>Imprimer
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body custom-card-action p-0">
+        <div class="table-responsive position-relative">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-center" style="width: 80px;">ID</th>
+                        <th>Membre</th>
+                        <th>Contact</th>
+                        <th class="text-center">Abonnement</th>
+                        <th class="text-center">Expiration</th>
+                        <th class="text-center">Statut</th>
+                        <th>Dernier accès</th>
+                        <th class="text-end" style="width: 120px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for member in page_obj %}
+                    <tr>
+                        <!-- ID -->
+                        <!-- ID (Compteur visuel) -->
+                        <td class="text-center fw-semibold text-muted">
+                            {{ page_obj.start_index|add:forloop.counter0 }}
+                        </td>
+
+                        <!-- Membre -->
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if member.photo %}
+                                    <img src="{{ member.photo.url }}" alt="Photo" class="rounded-circle" width="40" height="40" style="object-fit: cover;">
+                                {% else %}
+                                    <span class="material-icons text-secondary" style="font-size:32px;">account_circle</span>
+                                {% endif %}
+                                <div>
+                                    <strong>{{ member.first_name }} {{ member.last_name }}</strong>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Contact -->
+                        <td>
+                            <div>{{ member.phone }}</div>
+                            {% if member.email %}
+                                <small class="text-muted">{{ member.email }}</small>
+                            {% endif %}
+                        </td>
+
+                        <!-- Abonnement -->
+                        <td class="text-center">
+                            <span class="badge bg-light text-dark">{{ member.subscription_type|default:"Aucun" }}</span>
+                        </td>
+
+                        <!-- Date expiration -->
+                        <td class="text-center">
+                            {{ member.expiration_date|date:"d/m/Y"|default:"-" }}
+                        </td>
+
+                        <!-- Statut - Badge amélioré -->
+                        <td class="text-center">
+                            {% if member.computed_status == 'active' %}
+                                <span class="badge bg-success px-3 py-2">Actif</span>
+                            {% elif member.computed_status == 'suspended' %}
+                                <span class="badge bg-warning px-3 py-2 text-dark">Suspendu</span>
+                            {% else %}
+                                <span class="badge bg-danger px-3 py-2">Expiré</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Dernier accès -->
+                        <td class="text-muted">
+                            {{ member.last_access|date:"d/m/Y H:i"|default:"Jamais" }}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="text-end">
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown">
+                                    <span class="material-icons">more_vert</span>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-end">
+                                    <a onclick="openMemberModal({{ member.id }})" class="dropdown-item">
+                                        <span class="material-icons me-2">visibility</span>Voir
+                                    </a>
+                                    <a onclick="openEditMemberModal({{ member.id }})" class="dropdown-item">
+                                        <span class="material-icons me-2">edit</span>Modifier
+                                    </a>
+                                    {% if request.role == "admin" %}
+                                    <div class="dropdown-divider"></div>
+                                    <a href="#" onclick="if(confirm('Supprimer ce membre ?')) { document.getElementById('delete-form-{{ member.id }}').submit(); }" 
+                                       class="dropdown-item text-danger">
+                                        <span class="material-icons me-2">delete</span>Supprimer
+                                    </a>
+                                    <form id="delete-form-{{ member.id }}" method="POST" action="{% url 'members:delete_member' member.id %}" style="display:none;">
+                                        {% csrf_token %}
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <div class="d-flex flex-column align-items-center justify-content-center">
+                                <span class="material-icons" style="font-size: 64px; color: #6c757d;">group_off</span>
+                                <p class="mt-3 mb-1 fw-semibold text-muted">Aucun membre trouvé</p>
+                                <small class="text-muted">Essayez de modifier vos filtres</small>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Footer avec pagination -->
+    <div class="card-footer">
+        <div class="d-flex justify-content-between align-items-center">
+            <p class="fs-12 text-muted mb-0">
+                Affichage {{ page_obj.start_index }}-{{ page_obj.end_index }} sur {{ page_obj.paginator.count }} membres
+            </p>
+            <ul class="pagination pagination-custom mb-0">
+                <!-- Pagination identique à la tienne -->
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search }}&status={{ status }}&plan={{ plan_selected }}">
+                        <span class="material-icons">chevron_left</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><a class="page-link"><span class="material-icons">chevron_left</span></a></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><a class="page-link">{{ num }}</a></li>
+                    {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}&search={{ search }}&status={{ status }}&plan={{ plan_selected }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                        <span class="material-icons">chevron_right</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><a class="page-link"><span class="material-icons">chevron_right</span></a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+
+<!-- Vue accueil (pointage) -->
+<div id="checkInView" style="display: none;">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                        <span class="material-icons" style="font-size:22px;">qr_code_scanner</span>
+                        Pointage d'accès
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="input-group mb-4">
+                        <span class="input-group-text"><span class="material-icons" style="font-size:18px;">search</span></span>
+                        <input type="text" class="form-control form-control-lg" placeholder="Rechercher par nom, téléphone..." id="checkinSearch" onkeyup="searchCheckin()">
+                    </div>
+                    
+                    <div class="text-center mb-3 d-flex align-items-center justify-content-center gap-2">
+                        <span class="material-icons text-muted" style="font-size:20px;">qr_code</span>
+                        <span class="fw-semibold">Ou scanner le QR code</span>
+                    </div>
+                    
+                    <div class="qr-code-container text-center mx-auto mb-4">
+                        <div id="qr-reader" style="width: 100%; max-width: 300px; margin: 0 auto; display: none;"></div>
+                        <button class="btn btn-primary" onclick="startQRScanner()">
+                            <span class="material-icons me-2" style="font-size:18px;">qr_code_scanner</span>
+                            Activer le scanner
+                        </button>
+                    </div>
+                    
+                    <div id="checkinResult" class="mt-4"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title d-flex align-items-center gap-2 mb-0">
+                        <span class="material-icons" style="font-size:22px;">person</span>
+                        Fiche compacte
+                    </h5>
+                    <small class="text-muted d-flex align-items-center gap-1 mt-1">
+                        <span class="material-icons" style="font-size:14px;">visibility</span>Vue rapide
+                    </small>
+                </div>
+                <div class="card-body" id="compactMemberView">
+                    <div class="text-center text-muted py-5">
+                        <span class="material-icons" style="font-size:48px;">person_search</span>
+                        <p class="mt-2">Recherchez un membre pour afficher sa fiche</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL AJOUTER UN MEMBRE -->
+<div class="modal fade" id="addMemberModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <span class="material-icons me-2">person_add</span>
+                    Nouveau membre
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{% url 'members:create_member' %}" id="addMemberForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <!-- Photo -->
+                        <div class="col-md-4 text-center mb-4">
+                            <div class="member-photo-placeholder mx-auto mb-3" id="photoPreview" style="width:120px;height:120px;border-radius:50%;background:#f1f1f1;display:flex;align-items:center;justify-content:center;">
+                                <span class="material-icons" style="font-size:48px;color:#aaa;">add_a_photo</span>
+                            </div>
+                            {{ form.photo }}
+                        </div>
+
+                        <!-- Champs -->
+                        <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Prénom <span class="text-danger">*</span></label>
+                                    {{ form.first_name }}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nom <span class="text-danger">*</span></label>
+                                    {{ form.last_name }}
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Téléphone</label>
+                                    {{ form.phone }}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email</label>
+                                    {{ form.email }}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Adresse</label>
+                                {{ form.address }}
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                <button type="submit" class="btn btn-primary" form="addMemberForm">
+                    <span class="material-icons me-2">save</span> Enregistrer le membre
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL MODIFIER UN MEMBRE -->
+<div class="modal fade" id="editMemberModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <span class="material-icons me-2">edit</span>
+                    Modifier le membre
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" id="editMemberForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" id="edit_member_id" name="member_id">
+
+                    <div class="row">
+                        <!-- Photo -->
+                        <div class="col-md-4 text-center mb-4">
+                            <div id="editPhotoPreview" class="member-photo-placeholder mx-auto mb-3 rounded-circle" 
+                                 style="width:120px; height:120px; background:#f1f1f1; display:flex; align-items:center; justify-content:center; overflow:hidden; border:3px solid #fff;">
+                                <span class="material-icons" style="font-size:48px;color:#aaa;">add_a_photo</span>
+                            </div>
+                            <input type="file" id="edit_photo" name="photo" class="form-control" accept="image/*">
+                        </div>
+
+                        <!-- Champs -->
+                        <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Prénom <span class="text-danger">*</span></label>
+                                    <input type="text" id="edit_first_name" name="first_name" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nom <span class="text-danger">*</span></label>
+                                    <input type="text" id="edit_last_name" name="last_name" class="form-control" required>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Téléphone</label>
+                                    <input type="text" id="edit_phone" name="phone" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" id="edit_email" name="email" class="form-control">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Adresse</label>
+                                <textarea id="edit_address" name="address" class="form-control" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" onclick="saveEditedMember()" class="btn btn-primary">
+                    <span class="material-icons me-2">save</span> Enregistrer les modifications
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL VOIR UN MEMBRE -->
+<div class="modal fade" id="viewMemberModal" tabindex="-1" aria-hidden="true" >
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title d-flex align-items-center gap-2">
+                    <span class="material-icons" style="font-size:24px;">visibility</span>
+                    Détails du membre
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="member-compact-card mb-4">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <div id="viewMemberPhoto" class="member-photo-placeholder rounded-circle mx-auto mb-3" 
+                                style="width: 110px; height: 110px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                                <span class="material-icons" style="font-size:48px; color:#adb5bd;">person</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            
+                            <h4 id="viewMemberName" class="mb-1">-</h4>
+                            
+                            <!-- Nouveau : Username -->
+                            <p class="mb-2">
+                                <span class="material-icons" style="font-size:14px;">alternate_email</span> 
+                                Username : <strong id="viewMemberUsername">-</strong>
+                            </p>
+
+                            <p class="mb-1">
+                                <span class="material-icons" style="font-size:14px;">phone</span> 
+                                <span id="viewMemberPhone">-</span>
+                            </p>
+                            <p class="mb-0">
+                                <span class="material-icons" style="font-size:14px;">email</span> 
+                                <span id="viewMemberEmail">-</span>
+                            </p>
+                        </div>
+
+                        <div class="col-md-3 text-end">
+                            <div class="badge-actif mb-3" id="viewMemberStatus">-</div>
+                            <button class="btn btn-sm btn-light" onclick="printQRCode()">
+                                <span class="material-icons" style="font-size:20px;">qr_code</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                
+                <ul class="nav nav-tabs" id="memberTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active d-flex align-items-center gap-1" id="subscription-tab" data-bs-toggle="tab" href="#subscription">
+                            <span class="material-icons" style="font-size:18px;">card_membership</span>Abonnement
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center gap-1" id="payments-tab" data-bs-toggle="tab" href="#payments">
+                            <span class="material-icons" style="font-size:18px;">payments</span>Paiements
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center gap-1" id="access-tab" data-bs-toggle="tab" href="#access">
+                            <span class="material-icons" style="font-size:18px;">login</span>Accès
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center gap-1" id="documents-tab" data-bs-toggle="tab" href="#documents">
+                            <span class="material-icons" style="font-size:18px;">folder</span>Documents
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="tab-content mt-3">
+                    <div class="tab-pane fade show active" id="subscription">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr><td class="fw-semibold">Formule :</td><td id="viewSubscriptionType">-</td></tr>
+                                    <tr><td class="fw-semibold">Date d'inscription :</td><td id="viewStartDate">-</td></tr>
+                                    <tr><td class="fw-semibold">Date d'expiration :</td><td id="viewExpiryDate">-</td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr><td class="fw-semibold">Prix :</td><td id="viewPrice">0</td></tr>
+                                    <tr><td class="fw-semibold">Payé :</td><td id="viewPaid">0</td></tr>
+                                    <tr><td class="fw-semibold">Reste :</td><td id="viewRemaining">0</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="subscription-timeline mt-3">
+                            <h6 class="d-flex align-items-center gap-2">
+                                <span class="material-icons" style="font-size:18px;">history</span>
+                                Historique des abonnements
+                            </h6>
+                            <div id="subscriptionHistory"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="payments">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Montant</th>
+                                        <th>Mode</th>
+                                        <th>Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="paymentHistory"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="access">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Heure</th>
+                                        <th>Mode d'accès</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="accessHistory"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="documents">
+                        <div class="text-center mb-3">
+                            <div class="qr-code-container mx-auto mb-3 text-center">
+                                <canvas id="memberQRCode" width="160" height="160"></canvas>
+                            </div>
+                            <button class="btn btn-sm btn-primary" onclick="downloadQRCode()">
+                                <span class="material-icons" style="font-size:18px;">download</span> Télécharger QR Code
+                            </button>
+                        </div>
+                        <div class="mt-4">
+                            <h6 class="d-flex align-items-center gap-2">
+                                <span class="material-icons" style="font-size:18px;">description</span>
+                                Contrats et documents
+                            </h6>
+                            <div id="memberDocuments"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-light d-flex align-items-center gap-2" data-bs-dismiss="modal">
+                    <span class="material-icons" style="font-size:20px;">close</span>Fermer
+                </button>
+                <button type="button" class="btn btn-warning d-flex align-items-center gap-2" onclick="suspendMember()" id="suspendBtn">
+                    <span class="material-icons" style="font-size:20px;">pause_circle</span>Suspendre
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE CONFIRMATION DE SUSPENSION -->
+<div class="modal fade" id="suspendConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title d-flex align-items-center gap-2">
+                    <span class="material-icons text-warning" style="font-size:22px;">warning</span>
+                    Confirmation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir suspendre ce membre ?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                    <span class="material-icons me-2" style="font-size:18px;">close</span>Non
+                </button>
+                <button type="button" class="btn btn-warning" onclick="confirmSuspend()">
+                    <span class="material-icons me-2" style="font-size:18px;">check</span>Oui
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Initialisation des toasts
+    const toastElements = document.querySelectorAll('.toast');
+    toastElements.forEach(function (toastEl) {
+        const toast = new bootstrap.Toast(toastEl, {
+            autohide: true,
+            delay: 7000,
+            animation: true
+        });
+        toast.show();
+    });
+});
+</script>
+
+<script>
+function openMemberModal(memberId) {
+    fetch(`/members/${memberId}/`)
+        .then(response => {
+            if (!response.ok) throw new Error("Erreur serveur");
+            return response.json();
+        })
+        .then(data => {
+            console.log("Données reçues :", data);           // ← Ajoute cette ligne
+            console.log("QR Code reçu :", data.qr_code);     // ← Ajoute cette ligne
+            // === PHOTO ===
+            const photoContainer = document.getElementById("viewMemberPhoto");
+            if (data.photo_url) {
+                photoContainer.innerHTML = `
+                    <img src="${data.photo_url}" 
+                         alt="Photo du membre" 
+                         class="rounded-circle" 
+                         style="width:100%; height:100%; object-fit: cover;">
+                `;
+            } else {
+                photoContainer.innerHTML = `<span class="material-icons" style="font-size:48px; color:#adb5bd;">person</span>`;
+            }
+
+            // === USERNAME ===
+            document.getElementById("viewMemberUsername").innerText = data.username || "Non défini";
+
+            // === INFORMATIONS DE BASE ===
+            
+            document.getElementById("viewMemberName").innerText = `${data.first_name || ''} ${data.last_name || ''}`.trim() || "-";
+            document.getElementById("viewMemberPhone").innerText = data.phone || "-";
+            document.getElementById("viewMemberEmail").innerText = data.email || "-";
+            document.getElementById("viewMemberStatus").innerText = data.status || "Inconnu";
+
+            // === GÉNÉRATION QR CODE ===
+            const qrCanvas = document.getElementById("memberQRCode");
+            qrCanvas.getContext("2d").clearRect(0, 0, qrCanvas.width, qrCanvas.height); // Nettoyer le canvas
+
+            if (data.qr_code) {
+                try {
+                    QRCode.toCanvas(qrCanvas, data.qr_code, {
+                        width: 160,
+                        margin: 2,
+                        color: { 
+                            dark: "#000000", 
+                            light: "#FFFFFF" 
+                        }
+                    });
+                    console.log("QR Code généré avec succès sur canvas");
+                } catch (err) {
+                    console.error("Erreur lors de la génération du QR Code :", err);
+                    qrCanvas.outerHTML = `<p class="text-danger text-center">Erreur lors de la génération du QR</p>`;
+                }
+            } else {
+                qrCanvas.outerHTML = `<p class="text-muted text-center">QR code indisponible</p>`;
+            }
+
+            // === ABONNEMENT ===
+            document.getElementById("viewSubscriptionType").innerText = data.subscription_type || "Aucun";
+            document.getElementById("viewStartDate").innerText = data.start_date || "-";
+            document.getElementById("viewExpiryDate").innerText = data.expiration_date || "-";
+
+            // === PAIEMENTS ===
+            document.getElementById("viewPrice").innerText = (data.price || 0) + " CDF";
+            document.getElementById("viewPaid").innerText = (data.paid || 0) + " CDF";
+            document.getElementById("viewRemaining").innerText = (data.remaining || 0) + " CDF";
+
+            // Remplir le tableau des paiements
+            let paymentTable = document.getElementById("paymentHistory");
+            paymentTable.innerHTML = "";
+            data.payments.forEach(p => {
+                let statusBadge = p.status === "success" 
+                    ? `<span class="badge bg-success">Validé</span>` 
+                    : `<span class="badge bg-danger">Refusé</span>`;
+                
+                paymentTable.innerHTML += `
+                    <tr>
+                        <td>${p.date}</td>
+                        <td>${p.amount} CDF</td>
+                        <td>${p.method}</td>
+                        <td>${statusBadge}</td>
+                    </tr>
+                `;
+            });
+
+            // Remplir le tableau des accès
+            let accessTable = document.getElementById("accessHistory");
+            accessTable.innerHTML = "";
+            data.access_logs.forEach(log => {
+                let statusBadge = log.status 
+                    ? `<span class="badge bg-success">Autorisé</span>` 
+                    : `<span class="badge bg-danger">Refusé</span>`;
+                
+                accessTable.innerHTML += `
+                    <tr>
+                        <td>${log.date}</td>
+                        <td>${log.time}</td>
+                        <td>${log.device}</td>
+                    </tr>
+                `;
+            });
+
+            // Ouvrir le modal
+            const modal = new bootstrap.Modal(document.getElementById('viewMemberModal'));
+            modal.show();
+
+        })
+        .catch(error => {
+            console.error("Erreur lors du chargement du membre :", error);
+            alert("Impossible de charger les détails du membre. Veuillez réessayer.");
+        });
+}
+
+function downloadQRCode() {
+    const canvas = document.getElementById("memberQRCode");
+    if (!canvas || canvas.tagName !== "CANVAS") {
+        alert("Aucun QR Code disponible à télécharger.");
+        return;
+    }
+
+    const link = document.createElement("a");
+    link.download = `qr_${document.getElementById("viewMemberName").innerText.replace(/\s+/g, '_')}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+}
+
+
+function openEditMemberModal(memberId) {
+    fetch(`/members/edit/${memberId}/`)
+        .then(response => response.json())
+        .then(data => {
+            // Remplir le formulaire
+            document.getElementById("edit_member_id").value = data.id;
+            document.getElementById("edit_first_name").value = data.first_name || "";
+            document.getElementById("edit_last_name").value = data.last_name || "";
+            document.getElementById("edit_phone").value = data.phone || "";
+            document.getElementById("edit_email").value = data.email || "";
+            document.getElementById("edit_address").value = data.address || "";
+
+            // Prévisualisation photo
+            const preview = document.getElementById("editPhotoPreview");
+            if (data.photo_url) {
+                preview.innerHTML = `<img src="${data.photo_url}" style="width:100%; height:100%; object-fit: cover;">`;
+            } else {
+                preview.innerHTML = `<span class="material-icons" style="font-size:48px;color:#aaa;">add_a_photo</span>`;
+            }
+
+            // Ouvrir le modal
+            const modal = new bootstrap.Modal(document.getElementById('editMemberModal'));
+            modal.show();
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Impossible de charger les données du membre.");
+        });
+}
+
+
+function saveEditedMember() {
+    const formData = new FormData(document.getElementById("editMemberForm"));
+    const memberId = document.getElementById("edit_member_id").value;
+
+    fetch(`/members/edit/${memberId}/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success !== false) {
+            alert("Membre modifié avec succès !");
+            location.reload();   // Recharger la liste
+        } else {
+            alert("Erreur lors de la modification : " + JSON.stringify(data.errors));
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Une erreur est survenue lors de la sauvegarde.");
+    });
+}
+</script>
+
+{% endblock %}

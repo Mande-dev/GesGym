@@ -24,6 +24,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('compte/', include('compte.urls')),
+    path('members/', include('members.urls')),
     path('', include('core.urls')),  # dashboard ici
 ]
 if settings.DEBUG:

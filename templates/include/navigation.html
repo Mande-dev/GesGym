@@ -31,7 +31,7 @@
                     </ul>
                 </li>
 
-                <!-- Clients -->
+                <!-- Members -->
                 <li class="nxl-item nxl-hasmenu {% if nav_active == 'clients' %}active{% endif %}">
                     <a href="javascript:void(0);" class="nxl-link">
                         <span class="nxl-micon"><span class="material-icons">group</span></span>
@@ -39,7 +39,11 @@
                         <span class="nxl-arrow"><span class="material-icons">chevron_right</span></span>
                     </a>
                     <ul class="nxl-submenu">
-                        <li class="nxl-item" id="nav-clients-tous"><a class="nxl-link" href="#">Tous les clients</a></li>
+                        <li class="nxl-item" id="nav-clients-tous">
+                            <a class="nxl-link" href="{% url 'members:member_list' %}">
+                                Tous les clients
+                            </a>
+                        </li>
                         
                     </ul>
                 </li>
