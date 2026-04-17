@@ -221,9 +221,9 @@
                     </label>
                     <select class="form-select" id="filterCaisseMode" onchange="renderCashPayments()">
                         <option value="">Tous les modes</option>
-                        <option value="Espèces">Espèces</option>
-                        <option value="Carte">Carte</option>
-                        <option value="Mobile Money">Mobile Money</option>
+                        <option value="cash">Espèces</option>
+                        <option value="card">Carte</option>
+                        <option value="mobile_money">Mobile Money</option>
                     </select>
                 </div>
 
@@ -274,7 +274,10 @@
                     </thead>
                     <tbody>
                         {% for payment in payments %}
-                        <tr>
+                        <tr data-payment-row
+                            data-payment-id="{{ payment.id }}"
+                            data-status="{{ payment.status }}"
+                            data-method="{{ payment.method }}">
                             <td>
                                 <div class="fw-semibold">{{ payment.created_at|date:"d/m/Y" }}</div>
                                 <small class="text-muted">{{ payment.created_at|date:"H:i" }}</small>
@@ -327,7 +330,7 @@
                                 <a href="#"
                                    class="btn btn-sm btn-light"
                                    data-id="{{ payment.id }}"
-                                   onclick="showTransaction({{ payment.id }})">
+                                   onclick="showTransaction({{ payment.id }}); return false;">
                                     <span class="material-icons">visibility</span>
                                 </a>
                             </td>
@@ -626,6 +629,58 @@ document.addEventListener('DOMContentLoaded', function () {
         if (typeof renderCashPayments === "function") {
             renderCashPayments();
         }
+    }
+
+    window.renderCashPayments = function () {
+        const searchValue = (document.getElementById('filterCaisseSearch')?.value || "").toLowerCase().trim();
+        const statusValue = document.getElementById('filterCaisseStatut')?.value || "";
+        const methodValue = document.getElementById('filterCaisseMode')?.value || "";
+
+        document.querySelectorAll('[data-payment-row]').forEach(row => {
+            const matchesSearch = !searchValue || row.innerText.toLowerCase().includes(searchValue);
+            const matchesStatus = !statusValue || row.dataset.status === statusValue;
+            const matchesMethod = !methodValue || row.dataset.method === methodValue;
+
+            row.style.display = matchesSearch && matchesStatus && matchesMethod ? "" : "none";
+        });
+    }
+
+    window.showTransaction = function (paymentId) {
+        const row = document.querySelector(`[data-payment-id="${paymentId}"]`);
+        const details = document.getElementById('transactionDetails');
+        const modal = document.getElementById('transactionModal');
+
+        if (!row || !details || !modal) return;
+
+        const cells = row.querySelectorAll('td');
+        details.innerHTML = `
+            <div class="list-group list-group-flush">
+                <div class="list-group-item d-flex justify-content-between px-0">
+                    <span class="text-muted">Date</span><strong>${cells[0]?.innerText || '-'}</strong>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0">
+                    <span class="text-muted">Client</span><strong>${cells[1]?.innerText || '-'}</strong>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0">
+                    <span class="text-muted">Abonnement</span><strong>${cells[2]?.innerText || '-'}</strong>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0">
+                    <span class="text-muted">Montant</span><strong>${cells[3]?.innerText || '-'}</strong>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0">
+                    <span class="text-muted">Mode</span><strong>${cells[4]?.innerText || '-'}</strong>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0">
+                    <span class="text-muted">Statut</span><strong>${cells[5]?.innerText || '-'}</strong>
+                </div>
+            </div>
+        `;
+
+        bootstrap.Modal.getOrCreateInstance(modal).show();
+    }
+
+    window.retryCallback = function () {
+        alert("Le rejeu de callback sera branche avec le module de paiement en ligne.");
     }
 
     planSelect?.addEventListener('change', refreshPaymentAmount);
