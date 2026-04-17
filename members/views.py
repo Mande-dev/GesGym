@@ -1,5 +1,5 @@
 #members/views.py
-from datetime import timedelta
+from datetime import date, timedelta
 from io import BytesIO
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
@@ -8,14 +8,14 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
-from django.db.models import Q
+from django.db.models import Q, Exists, OuterRef
 from django.core.paginator import Paginator
 import qrcode
 from access.models import AccessLog
 from .forms import MemberCreationForm
 from .models import Member
 from pos.models import Payment
-from subscriptions.models import SubscriptionPlan
+from subscriptions.models import MemberSubscription, SubscriptionPlan
 
 
 #######   MEMBRE  ######
@@ -34,12 +34,35 @@ def member_list(request):
     gym = request.gym
     today = timezone.now().date()
     limit = today + timedelta(days=7)
+    active_subscription_exists = MemberSubscription.objects.filter(
+        member=OuterRef("pk"),
+        is_active=True,
+        end_date__gte=today,
+        is_paused=False,
+    )
+    expiring_subscription_exists = MemberSubscription.objects.filter(
+        member=OuterRef("pk"),
+        is_active=True,
+        end_date__range=(today, limit),
+        is_paused=False,
+    )
+    any_access_exists = AccessLog.objects.filter(member=OuterRef("pk"))
+    recent_access_exists = AccessLog.objects.filter(
+        member=OuterRef("pk"),
+        check_in_time__date__gte=today - timedelta(days=30),
+    )
 
     # 🔥 base queryset optimisée
     members = (
         Member.objects
         .filter(gym=gym)
         .select_related("user")
+        .annotate(
+            has_active_subscription=Exists(active_subscription_exists),
+            has_expiring_subscription=Exists(expiring_subscription_exists),
+            has_any_access=Exists(any_access_exists),
+            has_recent_access=Exists(recent_access_exists),
+        )
     )
 
     # =====================
@@ -49,6 +72,10 @@ def member_list(request):
     search = request.GET.get("search")
     status = request.GET.get("status")
     plan = request.GET.get("plan")
+    access_filter = request.GET.get("access")
+    created_from = request.GET.get("created_from")
+    created_to = request.GET.get("created_to")
+    sort = request.GET.get("sort", "newest")
 
     # 🔍 Recherche
     if search:
@@ -56,30 +83,25 @@ def member_list(request):
             Q(first_name__icontains=search) |
             Q(last_name__icontains=search) |
             Q(phone__icontains=search) |
-            Q(email__icontains=search)
+            Q(email__icontains=search) |
+            Q(user__username__icontains=search)
         )
 
     # 📊 Statut
     if status == "active":
-        members = members.filter(
-            subscriptions__is_active=True,
-            subscriptions__end_date__gte=today
-        ).distinct()
+        members = members.filter(has_active_subscription=True)
 
     elif status == "expired":
         # Membres dont l'abonnement actif est expiré
         members = members.filter(
-            ~Q(subscriptions__is_active=True, subscriptions__end_date__gte=today)
-        ).distinct()
+            has_active_subscription=False
+        ).exclude(status="suspended")
 
     elif status == "suspended":
         members = members.filter(status="suspended")
 
     elif status == "expiring":
-        members = members.filter(
-            subscriptions__is_active=True,
-            subscriptions__end_date__range=(today, limit)
-        ).distinct()
+        members = members.filter(has_expiring_subscription=True)
 
     # 💳 Plan
     if plan:
@@ -89,7 +111,34 @@ def member_list(request):
         ).distinct()
 
     # 🔽 tri par défaut (important UX)
-    members = members.order_by("-created_at")
+    if access_filter == "recent":
+        members = members.filter(has_recent_access=True)
+    elif access_filter == "never":
+        members = members.filter(has_any_access=False)
+
+    if created_from:
+        try:
+            members = members.filter(created_at__date__gte=date.fromisoformat(created_from))
+        except ValueError:
+            created_from = ""
+
+    if created_to:
+        try:
+            members = members.filter(created_at__date__lte=date.fromisoformat(created_to))
+        except ValueError:
+            created_to = ""
+
+    sort_options = {
+        "newest": ["-created_at"],
+        "oldest": ["created_at"],
+        "name_asc": ["first_name", "last_name"],
+        "name_desc": ["-first_name", "-last_name"],
+        "expiry_asc": ["subscriptions__end_date", "-created_at"],
+        "expiry_desc": ["-subscriptions__end_date", "-created_at"],
+        "last_access": ["-access_logs__check_in_time", "-created_at"],
+    }
+    sort = sort if sort in sort_options else "newest"
+    members = members.order_by(*sort_options[sort]).distinct()
 
     # =====================
     # 📄 PAGINATION
@@ -118,7 +167,10 @@ def member_list(request):
         "search": search or "",
         "status": status or "",
         "plan_selected": plan or "",
-        
+        "access_filter": access_filter or "",
+        "created_from": created_from or "",
+        "created_to": created_to or "",
+        "sort_selected": sort,
         "form" : form,
     }
 
@@ -183,7 +235,7 @@ def member_qr(request, uuid):
 
 @login_required
 def edit_member(request, member_id):
-    if request.role not in ["admin", "manager"]:
+    if request.role not in ["owner", "manager"]:
         raise PermissionDenied
 
     member = get_object_or_404(Member, id=member_id, gym=request.gym)
@@ -289,7 +341,7 @@ def member_detail(request, member_id):
 @login_required
 def delete_member(request, member_id):
 
-    if request.role != "admin":
+    if request.role != "owner":
         raise PermissionDenied
 
     member = get_object_or_404(
@@ -307,7 +359,7 @@ def delete_member(request, member_id):
 
 @login_required
 def suspend_member(request, member_id):
-    if request.role not in ["admin", "manager"]:
+    if request.role not in ["owner", "manager"]:
         raise PermissionDenied
 
     member = get_object_or_404(Member, id=member_id, gym=request.gym)
@@ -321,7 +373,6 @@ def suspend_member(request, member_id):
     if active_sub and not active_sub.is_paused:
         active_sub.is_paused = True
         active_sub.paused_at = timezone.now()
-        active_sub.pause_reason = "Suspension manuelle"
         active_sub.save()
 
     messages.warning(request, f"{member.first_name} {member.last_name} a été suspendu. Son abonnement est en pause.")
@@ -330,7 +381,7 @@ def suspend_member(request, member_id):
 
 @login_required
 def reactivate_member(request, member_id):
-    if request.role not in ["admin", "manager"]:
+    if request.role not in ["owner", "manager"]:
         raise PermissionDenied
 
     member = get_object_or_404(Member, id=member_id, gym=request.gym)

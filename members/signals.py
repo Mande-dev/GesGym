@@ -17,12 +17,9 @@ def generate_username(first_name, last_name):
 
 @receiver(post_save, sender=Member)
 def create_user_for_member(sender, instance, created, **kwargs):
-
     if created and not instance.user:
-
         username = generate_username(instance.first_name, instance.last_name)
 
-        # S'assurer que le username est unique
         while User.objects.filter(username=username).exists():
             username = generate_username(instance.first_name, instance.last_name)
 
@@ -33,13 +30,13 @@ def create_user_for_member(sender, instance, created, **kwargs):
             last_name=instance.last_name,
             email=instance.email or "",
         )
-        
+
         UserGymRole.objects.create(
             user=user,
             gym=instance.gym,
-            role="accountant",      # ou "member" si tu veux un rôle spécifique pour les membres
-            is_active=True
+            role="accountant",
+            is_active=True,
         )
 
         instance.user = user
-        instance.save(update_fields=['user'])
+        instance.save(update_fields=["user"])

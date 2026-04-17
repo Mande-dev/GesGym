@@ -69,6 +69,22 @@ value="{{ search }}"
 
 <!-- Statut -->
 
+<div class="col-md-2">
+
+<label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
+<span class="material-icons" style="font-size:16px;">verified_user</span>Statut
+</label>
+
+<select class="form-select" name="status">
+<option value="">Tous</option>
+<option value="active" {% if status == "active" %}selected{% endif %}>Actifs</option>
+<option value="expired" {% if status == "expired" %}selected{% endif %}>Expirés</option>
+<option value="suspended" {% if status == "suspended" %}selected{% endif %}>Suspendus</option>
+<option value="expiring" {% if status == "expiring" %}selected{% endif %}>Expiration proche</option>
+</select>
+
+</div>
+
 
 
 <!-- Formule -->
@@ -107,6 +123,50 @@ Filtrer
 <a href="{% url 'members:member_list' %}" class="btn btn-light-brand w-100">
 Réinitialiser
 </a>
+
+</div>
+
+<div class="row align-items-end g-3 mt-1">
+
+<div class="col-md-3">
+<label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
+<span class="material-icons" style="font-size:16px;">login</span>Accès
+</label>
+<select class="form-select" name="access">
+<option value="">Tous</option>
+<option value="recent" {% if access_filter == "recent" %}selected{% endif %}>Passés sur 30 jours</option>
+<option value="never" {% if access_filter == "never" %}selected{% endif %}>Jamais venus</option>
+</select>
+</div>
+
+<div class="col-md-2">
+<label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
+<span class="material-icons" style="font-size:16px;">calendar_today</span>Inscrit du
+</label>
+<input type="date" class="form-control" name="created_from" value="{{ created_from }}">
+</div>
+
+<div class="col-md-2">
+<label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
+<span class="material-icons" style="font-size:16px;">event</span>au
+</label>
+<input type="date" class="form-control" name="created_to" value="{{ created_to }}">
+</div>
+
+<div class="col-md-3">
+<label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
+<span class="material-icons" style="font-size:16px;">sort</span>Trier par
+</label>
+<select class="form-select" name="sort">
+<option value="newest" {% if sort_selected == "newest" %}selected{% endif %}>Plus récents</option>
+<option value="oldest" {% if sort_selected == "oldest" %}selected{% endif %}>Plus anciens</option>
+<option value="name_asc" {% if sort_selected == "name_asc" %}selected{% endif %}>Nom A à Z</option>
+<option value="name_desc" {% if sort_selected == "name_desc" %}selected{% endif %}>Nom Z à A</option>
+<option value="expiry_asc" {% if sort_selected == "expiry_asc" %}selected{% endif %}>Expiration proche</option>
+<option value="expiry_desc" {% if sort_selected == "expiry_desc" %}selected{% endif %}>Expiration lointaine</option>
+<option value="last_access" {% if sort_selected == "last_access" %}selected{% endif %}>Dernier accès</option>
+</select>
+</div>
 
 </div>
 
@@ -230,7 +290,7 @@ Réinitialiser
                                     <a onclick="openEditMemberModal({{ member.id }})" class="dropdown-item">
                                         <span class="material-icons me-2">edit</span>Modifier
                                     </a>
-                                    {% if request.role == "admin" %}
+                                    {% if request.role == "owner" %}
                                     <div class="dropdown-divider"></div>
                                     <a href="#" onclick="if(confirm('Supprimer ce membre ?')) { document.getElementById('delete-form-{{ member.id }}').submit(); }" 
                                        class="dropdown-item text-danger">
@@ -270,7 +330,7 @@ Réinitialiser
                 <!-- Pagination identique à la tienne -->
                 {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search }}&status={{ status }}&plan={{ plan_selected }}">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search }}&status={{ status }}&plan={{ plan_selected }}&access={{ access_filter }}&created_from={{ created_from }}&created_to={{ created_to }}&sort={{ sort_selected }}">
                         <span class="material-icons">chevron_left</span>
                     </a>
                 </li>
@@ -283,14 +343,14 @@ Réinitialiser
                         <li class="page-item active"><a class="page-link">{{ num }}</a></li>
                     {% else %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ num }}&search={{ search }}&status={{ status }}&plan={{ plan_selected }}">{{ num }}</a>
+                            <a class="page-link" href="?page={{ num }}&search={{ search }}&status={{ status }}&plan={{ plan_selected }}&access={{ access_filter }}&created_from={{ created_from }}&created_to={{ created_to }}&sort={{ sort_selected }}">{{ num }}</a>
                         </li>
                     {% endif %}
                 {% endfor %}
 
                 {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ search }}&status={{ status }}&plan={{ plan_selected }}&access={{ access_filter }}&created_from={{ created_from }}&created_to={{ created_to }}&sort={{ sort_selected }}">
                         <span class="material-icons">chevron_right</span>
                     </a>
                 </li>

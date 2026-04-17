@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_titre %}Tableau de bord{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title">
+            <h5 class="m-b-10">Tableau de bord</h5>
+            <div class="fs-12 text-muted">{{ gym.name }} - {{ period_label }} : {{ period_range_label }}</div>
+        </div>
+    </div>
+    <div class="page-header-right ms-auto">
+        <div class="page-header-right-items">
+            <form method="get" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="view" value="{{ context_view }}">
+                <label for="period" class="fs-12 text-muted mb-0">Periode</label>
+                <select class="form-select form-select-sm" id="period" name="period" onchange="this.form.submit()">
+                    <option value="day" {% if selected_period == "day" %}selected{% endif %}>Jour</option>
+                    <option value="week" {% if selected_period == "week" %}selected{% endif %}>Semaine</option>
+                    <option value="month" {% if selected_period == "month" %}selected{% endif %}>Mois</option>
+                    <option value="year" {% if selected_period == "year" %}selected{% endif %}>Annee</option>
+                </select>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row g-3 mb-4">
+        <div class="col-xxl-2 col-md-4 col-sm-6">
+            <div class="card stretch stretch-full stat-card">
+                <div class="card-body">
+                    <span class="fs-12 fw-medium text-muted">Membres actifs</span>
+                    <h3 class="mb-2 fw-bold">{{ active_members }}</h3>
+                    <div class="fs-12 text-muted">{{ active_member_rate }}% du portefeuille</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xxl-2 col-md-4 col-sm-6">
+            <div class="card stretch stretch-full stat-card">
+                <div class="card-body">
+                    <span class="fs-12 fw-medium text-muted">Nouveaux membres</span>
+                    <h3 class="mb-2 fw-bold">{{ new_members_period }}</h3>
+                    <span class="badge bg-soft-{{ new_members_trend.badge_class }} text-{{ new_members_trend.badge_class }}">{{ new_members_trend.display }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xxl-2 col-md-4 col-sm-6">
+            <div class="card stretch stretch-full stat-card">
+                <div class="card-body">
+                    <span class="fs-12 fw-medium text-muted">Renouvellements</span>
+                    <h3 class="mb-2 fw-bold">{{ renewals_period }}</h3>
+                    <span class="badge bg-soft-{{ renewals_trend.badge_class }} text-{{ renewals_trend.badge_class }}">{{ renewals_trend.display }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xxl-2 col-md-4 col-sm-6">
+            <div class="card stretch stretch-full stat-card">
+                <div class="card-body">
+                    <span class="fs-12 fw-medium text-muted">Expirations {{ period_label_lower }}</span>
+                    <h3 class="mb-2 fw-bold">{{ expirations_period }}</h3>
+                    <span class="badge bg-soft-{{ expirations_trend.badge_class }} text-{{ expirations_trend.badge_class }}">{{ expirations_trend.display }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xxl-2 col-md-4 col-sm-6">
+            <div class="card stretch stretch-full stat-card">
+                <div class="card-body">
+                    <span class="fs-12 fw-medium text-muted">Visites {{ period_label_lower }}</span>
+                    <h3 class="mb-2 fw-bold">{{ visits_period }}</h3>
+                    <span class="badge bg-soft-{{ visits_trend.badge_class }} text-{{ visits_trend.badge_class }}">{{ visits_trend.display }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xxl-2 col-md-4 col-sm-6">
+            <div class="card stretch stretch-full stat-card">
+                <div class="card-body">
+                    <span class="fs-12 fw-medium text-muted">Revenus {{ period_label_lower }}</span>
+                    <h3 class="mb-2 fw-bold">{{ period_revenue|floatformat:0 }} CDF</h3>
+                    <span class="badge bg-soft-{{ revenue_trend.badge_class }} text-{{ revenue_trend.badge_class }}">{{ revenue_trend.display }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card stretch stretch-full">
+                <div class="card-body">
+                    <div class="fs-12 text-muted">Total membres</div>
+                    <div class="fs-3 fw-bold">{{ total_members }}</div>
+                    <div class="fs-12 text-muted">Actifs {{ active_members }} - Expires {{ expired_members }} - Suspendus {{ suspended_members }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card stretch stretch-full">
+                <div class="card-body">
+                    <div class="fs-12 text-muted">Visiteurs uniques</div>
+                    <div class="fs-3 fw-bold">{{ unique_visitors_period }}</div>
+                    <div class="fs-12 text-muted">Engagement {{ engagement_rate }}%</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card stretch stretch-full">
+                <div class="card-body">
+                    <div class="fs-12 text-muted">Moyenne journalière</div>
+                    <div class="fs-3 fw-bold">{{ average_daily_visits }}</div>
+                    <div class="fs-12 text-muted">visites sur {{ period_days }} jour{{ period_days|pluralize }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card stretch stretch-full">
+                <div class="card-body">
+                    <div class="fs-12 text-muted">Acces refuses</div>
+                    <div class="fs-3 fw-bold">{{ denied_period }}</div>
+                    <div class="fs-12 text-muted">Aujourd'hui: {{ denied_today }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-xl-8">
+            <div class="card stretch stretch-full">
+                <div class="card-header">
+                    <h5 class="card-title">Evolution des revenus</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyRevenueChart" style="max-height: 320px;"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="card stretch stretch-full">
+                <div class="card-header">
+                    <h5 class="card-title">Alertes membres</h5>
+                </div>
+                <div class="card-body">
+                    <div class="vstack gap-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Expire dans 7 jours</span>
+                            <strong>{{ expiry_7_days }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Expire dans 3 jours</span>
+                            <strong>{{ expiry_3_days }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Expire demain</span>
+                            <strong>{{ expiry_1_day }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Expire sous 15 jours</span>
+                            <strong>{{ expiry_soon }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Paiements en attente</span>
+                            <strong>{{ pending_count }} / {{ pending_total|floatformat:0 }} CDF</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-xl-4">
+            <div class="card stretch stretch-full">
+                <div class="card-header">
+                    <h5 class="card-title">Repartition des abonnements</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Formule</th>
+                                    <th>Nombre</th>
+                                    <th>%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for plan in plans_stats %}
+                                <tr>
+                                    <td>{{ plan.plan__name|default:"Sans nom" }}</td>
+                                    <td>{{ plan.total }}</td>
+                                    <td>{% widthratio plan.total total_subscriptions 100 %}%</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">Aucune formule active</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="card stretch stretch-full">
+                <div class="card-header">
+                    <h5 class="card-title">Frequentation {{ period_label_lower }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="vstack gap-3">
+                        {% for row in attendance_rows %}
+                        <div class="d-flex justify-content-between align-items-center gap-3">
+                            <span>{{ row.label }}</span>
+                            <div class="flex-grow-1">
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-primary" style="width: {{ row.percent }}%"></div>
+                                </div>
+                            </div>
+                            <strong>{{ row.count }}</strong>
+                        </div>
+                        {% empty %}
+                        <div class="text-muted text-center">Aucune donnée de fréquentation</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="card stretch stretch-full">
+                <div class="card-header">
+                    <h5 class="card-title">Derniers accès</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Membre</th>
+                                    <th>Statut</th>
+                                    <th>Heure</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for access in recent_access %}
+                                <tr>
+                                    <td>{{ access.member.first_name }} {{ access.member.last_name }}</td>
+                                    <td>
+                                        {% if access.access_granted %}
+                                        <span class="badge bg-success">Autorise</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Refuse</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ access.check_in_time|date:"d/m H:i" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">Aucun accès récent</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-xl-6">
+            <div class="card stretch stretch-full">
+                <div class="card-header">
+                    <h5 class="card-title">Derniers paiements</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Membre</th>
+                                    <th>Montant</th>
+                                    <th>Methode</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in recent_payments %}
+                                <tr>
+                                    <td>{% if payment.member %}{{ payment.member.first_name }} {{ payment.member.last_name }}{% else %}Sans membre{% endif %}</td>
+                                    <td>{{ payment.amount_cdf|floatformat:0 }} CDF</td>
+                                    <td>{{ payment.get_method_display }}</td>
+                                    <td>{{ payment.created_at|date:"d/m H:i" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">Aucun paiement récent</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="card stretch stretch-full">
+                <div class="card-header">
+                    <h5 class="card-title">Lecture KPI members</h5>
+                </div>
+                <div class="card-body">
+                    <div class="vstack gap-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Nouveaux inscrits ce mois</span>
+                            <strong>{{ new_members_month }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Entrées aujourd'hui</span>
+                            <strong>{{ today_checkins }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Abonnements actifs</span>
+                            <strong>{{ total_subscriptions }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Revenu du mois</span>
+                            <strong>{{ monthly_revenue|floatformat:0 }} CDF</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Taille du vivier actif</span>
+                            <strong>{{ active_members }} membres</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const revenueCanvas = document.getElementById("monthlyRevenueChart");
+    if (revenueCanvas) {
+        const salesLabels = {{ sales_labels|default:"[]"|safe }};
+        const salesValues = {{ sales_values|default:"[]"|safe }};
+        new Chart(revenueCanvas, {
+            type: "line",
+            data: {
+                labels: salesLabels,
+                datasets: [{
+                    label: "Revenus",
+                    data: salesValues,
+                    borderColor: "#0d6efd",
+                    backgroundColor: "rgba(13, 110, 253, 0.12)",
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

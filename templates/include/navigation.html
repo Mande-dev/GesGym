@@ -175,12 +175,12 @@
                     </a>
                     <ul class="nxl-submenu">
                         <li class="nxl-item {% if nav_sub == 'liste' %}active{% endif %}">
-                            <a class="nxl-link" href="{% url 'machines:list' gym_id=request.gym.id %}">
+                            <a class="nxl-link" href="{% url 'machines:list' %}">
                                 Liste des machines
                             </a>
                         </li>
                         <li class="nxl-item {% if nav_sub == 'maintenance' %}active{% endif %}">
-                            <a class="nxl-link" href="{% url 'machines:maintenance_dashboard' gym_id=request.gym.id %}">
+                            <a class="nxl-link" href="{% url 'machines:maintenance_dashboard' %}">
                                 Tableau de bord des maintenances
                             </a>
                         </li>
