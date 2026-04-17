@@ -625,6 +625,29 @@ def gym_dashboard(request, gym_id):
 
         machine_kpis = build_machine_kpis(gym, period_data)
 
+    rh_kpis = {
+        "total_employees": 0,
+        "active_employees": 0,
+        "inactive_employees": 0,
+        "attendance_today_present": 0,
+        "attendance_today_absent": 0,
+        "attendance_today_rate": 0,
+        "attendance_period_present": 0,
+        "attendance_period_absent": 0,
+        "attendance_period_rate": 0,
+        "monthly_payroll": 0,
+        "monthly_payroll_paid": 0,
+        "monthly_payroll_pending": 0,
+        "monthly_payroll_pending_count": 0,
+        "salary_paid_period": 0,
+        "salary_payments_period": 0,
+        "employee_role_breakdown": [],
+    }
+    if "RH" in active_modules:
+        from rh.kpis import build_rh_kpis
+
+        rh_kpis = build_rh_kpis(gym, period_data)
+
     total_maintenance_cost = machine_kpis["total_maintenance_cost"]
     total_revenue = monthly_revenue
 
@@ -700,6 +723,7 @@ def gym_dashboard(request, gym_id):
         "sales_values": sales_values,
     }
     context.update(machine_kpis)
+    context.update(rh_kpis)
 
     return render(request, "core/dashboard_members.html", context)
 

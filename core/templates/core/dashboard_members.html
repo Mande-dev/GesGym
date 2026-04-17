@@ -141,7 +141,7 @@
     </div>
 
     <div class="row g-3 mb-4">
-        <div class="col-xl-4">
+        <div class="col-xl-3">
             <div class="card stretch stretch-full">
                 <div class="card-header">
                     <h5 class="card-title">Portefeuille membres</h5>
@@ -158,7 +158,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-4">
+        <div class="col-xl-3">
             <div class="card stretch stretch-full">
                 <div class="card-header">
                     <h5 class="card-title">Inscriptions {{ period_label_lower }}</h5>
@@ -171,7 +171,38 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-4">
+        <div class="col-xl-3">
+            <div class="card stretch stretch-full">
+                <div class="card-header">
+                    <h5 class="card-title">KPI RH</h5>
+                </div>
+                <div class="card-body">
+                    <div class="vstack gap-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Employes actifs</span>
+                            <strong>{{ active_employees|default:0 }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Presence aujourd'hui</span>
+                            <strong>{{ attendance_today_rate|default:0 }}%</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Presence {{ period_label_lower }}</span>
+                            <strong>{{ attendance_period_rate|default:0 }}%</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Paie en attente</span>
+                            <strong>{{ monthly_payroll_pending|default:0|floatformat:0 }} CDF</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Payee {{ period_label_lower }}</span>
+                            <strong>{{ salary_paid_period|default:0|floatformat:0 }} CDF</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3">
             <div class="card stretch stretch-full">
                 <div class="card-header">
                     <h5 class="card-title">Formules actives</h5>

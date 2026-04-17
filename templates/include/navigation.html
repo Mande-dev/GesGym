@@ -187,18 +187,18 @@
                     </a>
                     <ul class="nxl-submenu">
                         <li class="nxl-item {% if nav_sub == 'employes' %}active{% endif %}">
-                            <a class="nxl-link" href="{% url 'rh:list' gym_id=request.gym.id %}">
+                            <a class="nxl-link" href="{% url 'rh:list' %}">
                                 Employés
                             </a>
                         </li>
                         <!-- salaire -->
                         <li class="nxl-item {% if nav_sub == 'presences' %}active{% endif %}">
-                            <a class="nxl-link" href="{% url 'rh:attendance_bulk' gym_id=request.gym.id %}">
+                            <a class="nxl-link" href="{% url 'rh:attendance_bulk' %}">
                                 Enregistrer présences
                             </a>
                         </li>
                         <li class="nxl-item {% if nav_sub == 'paie' %}active{% endif %}">
-                            <a class="nxl-link" href="{% url 'rh:payroll_dashboard' gym_id=request.gym.id %}">
+                            <a class="nxl-link" href="{% url 'rh:payroll_dashboard' %}">
                                 Paie
                             </a>
                         </li>
