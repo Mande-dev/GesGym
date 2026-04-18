@@ -3,10 +3,13 @@ from calendar import month_name
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
+from pos.services import record_expense
 from smartclub.decorators import module_required
 
 from .forms import AttendanceForm, BulkAttendanceForm, EmployeeForm, PaymentForm
@@ -31,6 +34,10 @@ def _parse_year_month(request):
 
 def _month_name(month):
     return month_name[month]
+
+
+def _validation_message(exc):
+    return exc.messages[0] if getattr(exc, "messages", None) else str(exc)
 
 
 @login_required
@@ -79,6 +86,8 @@ def employee_detail(request, employee_id):
         year=year,
         month=month,
         is_paid=True,
+        pos_payment__isnull=False,
+        pos_payment__status="success",
     ).exists()
     attendances = employee.attendances.filter(
         gym=request.gym,
@@ -301,7 +310,7 @@ def process_payment(request, employee_id, year, month):
         month=month,
     ).first()
 
-    if existing_payment and existing_payment.is_paid:
+    if existing_payment and existing_payment.is_paid and existing_payment.pos_payment_id:
         messages.warning(request, f"Le salaire de {employee.name} est deja paye.")
         return redirect("rh:payroll_dashboard")
 
@@ -314,21 +323,43 @@ def process_payment(request, employee_id, year, month):
     ).count()
 
     if request.method == "POST":
-        form = PaymentForm(request.POST)
+        form = PaymentForm(request.POST, instance=existing_payment)
         if form.is_valid():
-            payment = form.save(commit=False)
-            payment.employee = employee
-            payment.gym = request.gym
-            payment.year = year
-            payment.month = month
-            payment.amount = salary
-            payment.present_days = present_days
-            payment.save()
+            try:
+                with transaction.atomic():
+                    pos_payment = record_expense(
+                        gym=request.gym,
+                        amount_cdf=salary,
+                        method=form.cleaned_data["payment_method"],
+                        category="salary",
+                        description=f"Salaire {employee.name} - {month}/{year}",
+                        created_by=request.user,
+                        source_app="rh",
+                        source_model="Employee",
+                        source_id=employee.id,
+                    )
 
-            messages.success(request, f"Paiement de {salary} CDF enregistre pour {employee.name}.")
+                    payment = form.save(commit=False)
+                    payment.employee = employee
+                    payment.gym = request.gym
+                    payment.year = year
+                    payment.month = month
+                    payment.amount = salary
+                    payment.present_days = present_days
+                    payment.pos_payment = pos_payment
+                    payment.save()
+
+                    pos_payment.source_model = "PaymentRecord"
+                    pos_payment.source_id = payment.id
+                    pos_payment.save(update_fields=["source_model", "source_id"])
+            except ValidationError as exc:
+                messages.error(request, _validation_message(exc))
+                return redirect("rh:process_payment", employee_id=employee.id, year=year, month=month)
+
+            messages.success(request, f"Paiement de {salary} CDF enregistre via POS pour {employee.name}.")
             return redirect("rh:payroll_dashboard")
     else:
-        form = PaymentForm()
+        form = PaymentForm(instance=existing_payment)
 
     context = {
         "gym": request.gym,

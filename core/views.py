@@ -648,6 +648,24 @@ def gym_dashboard(request, gym_id):
 
         rh_kpis = build_rh_kpis(gym, period_data)
 
+    product_kpis = {
+        "total_products": 0,
+        "all_products_count": 0,
+        "inactive_products": 0,
+        "stock_value_total": 0,
+        "low_stock_count": 0,
+        "out_of_stock_count": 0,
+        "stock_movements_period": 0,
+        "stock_in_period": 0,
+        "stock_out_period": 0,
+        "top_value_products": [],
+        "recent_stock_movements": [],
+    }
+    if "PRODUCTS" in active_modules:
+        from products.kpis import build_product_kpis
+
+        product_kpis = build_product_kpis(gym, period_data)
+
     total_maintenance_cost = machine_kpis["total_maintenance_cost"]
     total_revenue = monthly_revenue
 
@@ -724,6 +742,7 @@ def gym_dashboard(request, gym_id):
     }
     context.update(machine_kpis)
     context.update(rh_kpis)
+    context.update(product_kpis)
 
     return render(request, "core/dashboard_members.html", context)
 

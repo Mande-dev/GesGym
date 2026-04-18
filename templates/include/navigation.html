@@ -216,17 +216,17 @@
                     </a>
                     <ul class="nxl-submenu">
                         <li class="nxl-item {% if nav_sub == 'product_list' %}active{% endif %}">
-                            <a class="nxl-link" href="{% url 'products:list' gym_id=request.gym.id %}">
+                            <a class="nxl-link" href="{% url 'products:list' %}">
                                 Liste des produits
                             </a>
                         </li>
                         <li class="nxl-item {% if nav_sub == 'stock_dashboard' %}active{% endif %}">
-                            <a class="nxl-link" href="{% url 'products:stock_dashboard' gym_id=request.gym.id %}">
+                            <a class="nxl-link" href="{% url 'products:stock_dashboard' %}">
                                 Tableau de bord du stock
                             </a>
                         </li>
                         <li class="nxl-item {% if nav_sub == 'movement_list' %}active{% endif %}">
-                            <a class="nxl-link" href="{% url 'products:movement_list' gym_id=request.gym.id %}">
+                            <a class="nxl-link" href="{% url 'products:movement_list' %}">
                                 Historique des mouvements
                             </a>
                         </li>

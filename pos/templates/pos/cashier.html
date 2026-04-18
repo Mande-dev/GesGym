@@ -224,6 +224,8 @@
                         <option value="cash">Espèces</option>
                         <option value="card">Carte</option>
                         <option value="mobile_money">Mobile Money</option>
+                        <option value="bank_transfer">Virement bancaire</option>
+                        <option value="check">Cheque</option>
                     </select>
                 </div>
 
@@ -265,7 +267,7 @@
                         <tr>
                             <th>Date</th>
                             <th>Client</th>
-                            <th>Abonnement</th>
+                            <th>Nature</th>
                             <th>Montant</th>
                             <th>Mode</th>
                             <th>Statut</th>
@@ -289,6 +291,8 @@
                                         <span class="material-icons text-secondary" style="font-size:20px;">person</span>
                                         <span>{{ payment.member.first_name }} {{ payment.member.last_name }}</span>
                                     </div>
+                                {% elif payment.product %}
+                                    <span>Vente produit</span>
                                 {% else %}
                                     <span class="text-muted">Décaissement</span>
                                 {% endif %}
@@ -297,6 +301,10 @@
                             <td>
                                 {% if payment.subscription %}
                                     {{ payment.subscription.plan.name }}
+                                {% elif payment.product %}
+                                    {{ payment.product.name }}
+                                {% elif payment.category %}
+                                    {{ payment.get_category_display }}
                                 {% else %}
                                     <span class="text-muted">-</span>
                                 {% endif %}
@@ -444,8 +452,16 @@
 
                 <div class="modal-body">
                     <div class="mb-3">
+                        <label class="form-label">Type d'encaissement</label>
+                        <select name="sale_type" id="saleTypeSelect" class="form-select">
+                            <option value="subscription">Abonnement</option>
+                            <option value="product">Vente produit</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3" data-sale-section="subscription">
                         <label class="form-label">Client</label>
-                        <select name="member" class="form-select" required>
+                        <select name="member" id="memberSelect" class="form-select" required>
                             <option value="">-- Sélectionner un client --</option>
                             {% for m in members %}
                                 <option value="{{ m.id }}">{{ m.first_name }} {{ m.last_name }} ({{ m.phone }})</option>
@@ -453,7 +469,7 @@
                         </select>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-3" data-sale-section="subscription">
                         <label class="form-label">Formule d'abonnement</label>
                         <select name="plan" id="planSelect" class="form-select" required>
                             <option value="">-- Choisir une formule --</option>
@@ -463,6 +479,32 @@
                                 </option>
                             {% endfor %}
                         </select>
+                    </div>
+
+                    <div class="row" data-sale-section="product" style="display:none;">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Produit</label>
+                            <select name="product" id="productSelect" class="form-select" disabled>
+                                <option value="">-- Choisir un produit --</option>
+                                {% for product in products %}
+                                    <option value="{{ product.id }}"
+                                            data-price-usd="{{ product.price }}"
+                                            data-stock="{{ product.quantity }}">
+                                        {{ product.name }} - {{ product.price }} USD (stock: {{ product.quantity }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Quantite</label>
+                            <input type="number"
+                                   name="quantity"
+                                   id="quantityInput"
+                                   class="form-control"
+                                   min="1"
+                                   value="1"
+                                   disabled>
+                        </div>
                     </div>
 
                     <div class="row">
@@ -493,6 +535,8 @@
                             <option value="cash">Espèces</option>
                             <option value="card">Carte Bancaire</option>
                             <option value="mobile_money">Mobile Money</option>
+                            <option value="bank_transfer">Virement bancaire</option>
+                            <option value="check">Cheque</option>
                         </select>
                     </div>
                 </div>
@@ -593,16 +637,49 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const saleTypeSelect = document.getElementById('saleTypeSelect');
+    const memberSelect = document.getElementById('memberSelect');
     const planSelect = document.getElementById('planSelect');
+    const productSelect = document.getElementById('productSelect');
+    const quantityInput = document.getElementById('quantityInput');
     const currencySelect = document.getElementById('currencySelect');
     const amountInput = document.getElementById('amountInput');
     const sessionExchangeRate = Number("{{ register.exchange_rate|default:0 }}");
 
-    function refreshPaymentAmount() {
-        if (!planSelect || !currencySelect || !amountInput) return;
+    function updateSaleSections() {
+        const saleType = saleTypeSelect?.value || "subscription";
 
-        const selectedPlan = planSelect.options[planSelect.selectedIndex];
-        const priceUsd = Number(selectedPlan?.dataset?.priceUsd || 0);
+        document.querySelectorAll('[data-sale-section]').forEach(section => {
+            section.style.display = section.dataset.saleSection === saleType ? "" : "none";
+        });
+
+        if (memberSelect) {
+            memberSelect.disabled = saleType !== "subscription";
+            memberSelect.required = saleType === "subscription";
+        }
+        if (planSelect) {
+            planSelect.disabled = saleType !== "subscription";
+            planSelect.required = saleType === "subscription";
+        }
+        if (productSelect) {
+            productSelect.disabled = saleType !== "product";
+            productSelect.required = saleType === "product";
+        }
+        if (quantityInput) {
+            quantityInput.disabled = saleType !== "product";
+            quantityInput.required = saleType === "product";
+        }
+    }
+
+    function refreshPaymentAmount() {
+        if (!currencySelect || !amountInput) return;
+
+        const saleType = saleTypeSelect?.value || "subscription";
+        const selectedItem = saleType === "product"
+            ? productSelect?.options[productSelect.selectedIndex]
+            : planSelect?.options[planSelect.selectedIndex];
+        const quantity = saleType === "product" ? Number(quantityInput?.value || 1) : 1;
+        const priceUsd = Number(selectedItem?.dataset?.priceUsd || 0) * Math.max(quantity, 1);
 
         if (!priceUsd) {
             amountInput.value = "";
@@ -662,7 +739,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <span class="text-muted">Client</span><strong>${cells[1]?.innerText || '-'}</strong>
                 </div>
                 <div class="list-group-item d-flex justify-content-between px-0">
-                    <span class="text-muted">Abonnement</span><strong>${cells[2]?.innerText || '-'}</strong>
+                    <span class="text-muted">Nature</span><strong>${cells[2]?.innerText || '-'}</strong>
                 </div>
                 <div class="list-group-item d-flex justify-content-between px-0">
                     <span class="text-muted">Montant</span><strong>${cells[3]?.innerText || '-'}</strong>
@@ -683,8 +760,15 @@ document.addEventListener('DOMContentLoaded', function () {
         alert("Le rejeu de callback sera branche avec le module de paiement en ligne.");
     }
 
+    saleTypeSelect?.addEventListener('change', function () {
+        updateSaleSections();
+        refreshPaymentAmount();
+    });
     planSelect?.addEventListener('change', refreshPaymentAmount);
+    productSelect?.addEventListener('change', refreshPaymentAmount);
+    quantityInput?.addEventListener('input', refreshPaymentAmount);
     currencySelect?.addEventListener('change', refreshPaymentAmount);
+    updateSaleSections();
     refreshPaymentAmount();
 });
 </script>

@@ -264,7 +264,7 @@
     </div>
 
     <div class="row g-3 mb-4">
-        <div class="col-xl-4">
+        <div class="col-xl-3">
             <div class="card stretch stretch-full">
                 <div class="card-header">
                     <h5 class="card-title">Repartition des abonnements</h5>
@@ -297,7 +297,38 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-4">
+        <div class="col-xl-3">
+            <div class="card stretch stretch-full">
+                <div class="card-header">
+                    <h5 class="card-title">KPI produits</h5>
+                </div>
+                <div class="card-body">
+                    <div class="vstack gap-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Produits actifs</span>
+                            <strong>{{ total_products|default:0 }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Valeur du stock</span>
+                            <strong>{{ stock_value_total|default:0|floatformat:0 }} USD</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Stock bas</span>
+                            <strong>{{ low_stock_count|default:0 }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Rupture</span>
+                            <strong>{{ out_of_stock_count|default:0 }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Sorties {{ period_label_lower }}</span>
+                            <strong>{{ stock_out_period|default:0 }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3">
             <div class="card stretch stretch-full">
                 <div class="card-header">
                     <h5 class="card-title">Frequentation {{ period_label_lower }}</h5>

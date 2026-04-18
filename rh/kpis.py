@@ -54,6 +54,8 @@ def payroll_rows(gym, year, month):
             year=year,
             month=month,
             is_paid=True,
+            pos_payment__isnull=False,
+            pos_payment__status="success",
         ).exists()
 
         if salary > 0 or present_days > 0:
@@ -95,6 +97,10 @@ def build_rh_kpis(gym, period_data=None):
     paid_period = PaymentRecord.objects.filter(
         gym=gym,
         is_paid=True,
+        pos_payment__isnull=False,
+        pos_payment__status="success",
+        pos_payment__type="out",
+        pos_payment__category="salary",
         payment_date__range=(period_data["start_date"], period_data["end_date"]),
     )
     month_payroll = payroll_rows(gym, today.year, today.month)

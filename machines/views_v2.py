@@ -1,9 +1,12 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import Avg, Count, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 
+from pos.services import record_expense
 from smartclub.decorators import module_required
 
 from .forms import MachineForm, MaintenanceLogForm
@@ -15,6 +18,10 @@ from .kpis import (
     maintenance_queryset,
 )
 from .models import Machine, MaintenanceLog
+
+
+def _validation_message(exc):
+    return exc.messages[0] if getattr(exc, "messages", None) else str(exc)
 
 
 @login_required
@@ -131,15 +138,40 @@ def maintenance_log_create(request, machine_id):
     if request.method == "POST":
         form = MaintenanceLogForm(request.POST)
         if form.is_valid():
-            log = form.save(commit=False)
-            log.machine = machine
-            log.save()
+            try:
+                with transaction.atomic():
+                    log = form.save(commit=False)
+                    log.machine = machine
 
-            if request.POST.get("change_status"):
-                new_status = request.POST.get("status")
-                if new_status in dict(Machine.STATUS):
-                    machine.status = new_status
-                    machine.save(update_fields=["status"])
+                    if log.cost and log.cost > 0:
+                        pos_payment = record_expense(
+                            gym=request.gym,
+                            amount_cdf=log.cost,
+                            method="cash",
+                            category="maintenance",
+                            description=f"Maintenance machine: {machine.name}",
+                            created_by=request.user,
+                            source_app="machines",
+                            source_model="Machine",
+                            source_id=machine.id,
+                        )
+                        log.pos_payment = pos_payment
+
+                    log.save()
+
+                    if log.pos_payment_id:
+                        log.pos_payment.source_model = "MaintenanceLog"
+                        log.pos_payment.source_id = log.id
+                        log.pos_payment.save(update_fields=["source_model", "source_id"])
+
+                    if request.POST.get("change_status"):
+                        new_status = request.POST.get("status")
+                        if new_status in dict(Machine.STATUS):
+                            machine.status = new_status
+                            machine.save(update_fields=["status"])
+            except ValidationError as exc:
+                messages.error(request, _validation_message(exc))
+                return redirect("machines:add_maintenance", machine_id=machine.id)
 
             messages.success(request, f'Maintenance ajoutee pour "{machine.name}" avec succes.')
             return redirect("machines:detail", machine_id=machine.id)

@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
@@ -7,6 +8,7 @@ from django.utils import timezone
 
 from compte.models import User, UserGymRole
 from organizations.models import Gym, GymModule, Module, Organization
+from pos.models import CashRegister, Payment
 
 from .models import Attendance, Employee, PaymentRecord
 
@@ -33,6 +35,11 @@ class RhTenantTests(TestCase):
 
         self.user = User.objects.create_user(username="rh-manager", password="test-pass")
         UserGymRole.objects.create(user=self.user, gym=self.gym_a, role="manager")
+        self.register_a = CashRegister.objects.create(
+            gym=self.gym_a,
+            opening_amount=Decimal("0.00"),
+            exchange_rate=Decimal("2800.00"),
+        )
 
         self.employee_a = Employee.objects.create(
             gym=self.gym_a,
@@ -106,6 +113,33 @@ class RhTenantTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 404)
+
+    def test_salary_payment_creates_pos_expense(self):
+        response = self.client.post(
+            reverse("rh:process_payment", args=[self.employee_a.id, self.today.year, self.today.month]),
+            {"payment_method": "cash", "reference": "SAL-001", "notes": ""},
+        )
+
+        self.assertRedirects(response, reverse("rh:payroll_dashboard"))
+        salary_payment = PaymentRecord.objects.get(
+            gym=self.gym_a,
+            employee=self.employee_a,
+            year=self.today.year,
+            month=self.today.month,
+        )
+        self.assertIsNotNone(salary_payment.pos_payment)
+        self.assertEqual(salary_payment.amount, Decimal("100.00"))
+        self.assertEqual(salary_payment.pos_payment.category, "salary")
+        self.assertEqual(salary_payment.pos_payment.type, "out")
+        self.assertEqual(salary_payment.pos_payment.amount_cdf, Decimal("100.00"))
+        self.assertTrue(
+            Payment.objects.filter(
+                gym=self.gym_a,
+                cash_register=self.register_a,
+                category="salary",
+                amount_cdf=Decimal("100.00"),
+            ).exists()
+        )
 
     def test_form_pages_render_without_gym_id_urls(self):
         urls = [

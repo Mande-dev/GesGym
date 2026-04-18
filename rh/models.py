@@ -226,6 +226,14 @@ class PaymentRecord(models.Model):
     notes = models.TextField(blank=True)
     
     is_paid = models.BooleanField(default=True)
+
+    pos_payment = models.OneToOneField(
+        "pos.Payment",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="salary_record"
+    )
     
     created_at = models.DateTimeField(auto_now_add=True)
     
@@ -248,6 +256,11 @@ class PaymentRecord(models.Model):
             raise ValidationError({"amount": "Le montant ne peut pas etre negatif."})
         if self.present_days is not None and self.present_days < 0:
             raise ValidationError({"present_days": "Le nombre de jours presents ne peut pas etre negatif."})
+        if self.pos_payment_id:
+            if self.pos_payment.gym_id != self.gym_id:
+                raise ValidationError({"pos_payment": "Le paiement POS doit appartenir au meme gym."})
+            if self.pos_payment.type != "out" or self.pos_payment.category != "salary":
+                raise ValidationError({"pos_payment": "Le paiement POS doit etre une sortie de type salaire."})
 
     def save(self, *args, **kwargs):
         self.full_clean()

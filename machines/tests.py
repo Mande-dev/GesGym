@@ -1,8 +1,10 @@
 from django.test import TestCase
 from django.urls import reverse
+from decimal import Decimal
 
 from compte.models import User, UserGymRole
 from organizations.models import Gym, GymModule, Module, Organization
+from pos.models import CashRegister, Payment
 
 from .models import Machine, MaintenanceLog
 
@@ -32,6 +34,11 @@ class MachinesTenantTests(TestCase):
 
         self.user = User.objects.create_user(username="manager-a", password="test-pass")
         UserGymRole.objects.create(user=self.user, gym=self.gym_a, role="manager")
+        self.register_a = CashRegister.objects.create(
+            gym=self.gym_a,
+            opening_amount=Decimal("0.00"),
+            exchange_rate=Decimal("2800.00"),
+        )
 
         self.machine_a = Machine.objects.create(gym=self.gym_a, name="Tapis A", status="ok")
         self.machine_b = Machine.objects.create(gym=self.gym_b, name="Tapis B", status="broken")
@@ -108,5 +115,15 @@ class MachinesTenantTests(TestCase):
                 machine=self.machine_a,
                 description="Graissage complet",
                 cost="25.00",
+                pos_payment__isnull=False,
+            ).exists()
+        )
+        self.assertTrue(
+            Payment.objects.filter(
+                gym=self.gym_a,
+                cash_register=self.register_a,
+                type="out",
+                category="maintenance",
+                amount_cdf=Decimal("25.00"),
             ).exists()
         )

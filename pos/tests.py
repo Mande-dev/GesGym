@@ -6,7 +6,9 @@ from django.test import TestCase
 
 from members.models import Member
 from organizations.models import Gym, Organization
+from products.models import Product, StockMovement
 from .models import CashRegister, ExchangeRate, Payment
+from .services import record_product_sale
 
 
 class PosAccountingTests(TestCase):
@@ -86,6 +88,54 @@ class PosAccountingTests(TestCase):
         self.assertEqual(payment.exchange_rate, Decimal("2800.00"))
         self.assertEqual(payment.amount_usd, Decimal("10.00"))
         self.assertEqual(payment.amount_cdf, Decimal("28000.00"))
+
+    def test_payment_requires_cash_register(self):
+        with self.assertRaises(ValidationError):
+            Payment.objects.create(
+                gym=self.gym_a,
+                amount=Decimal("5000.00"),
+                currency="CDF",
+                method="cash",
+                type="in",
+                status="success",
+            )
+
+    def test_product_sale_is_recorded_in_pos_and_updates_stock(self):
+        CashRegister.objects.create(
+            gym=self.gym_a,
+            opening_amount=Decimal("0.00"),
+            exchange_rate=Decimal("2800.00"),
+        )
+        product = Product.objects.create(
+            gym=self.gym_a,
+            name="Water",
+            price=Decimal("2.50"),
+            quantity=10,
+        )
+
+        payment = record_product_sale(
+            gym=self.gym_a,
+            product=product,
+            quantity=3,
+            currency="USD",
+            method="cash",
+        )
+
+        product.refresh_from_db()
+        self.assertEqual(product.quantity, 7)
+        self.assertEqual(payment.category, "product")
+        self.assertEqual(payment.type, "in")
+        self.assertEqual(payment.amount_usd, Decimal("7.50"))
+        self.assertEqual(payment.amount_cdf, Decimal("21000.00"))
+        self.assertTrue(
+            StockMovement.objects.filter(
+                gym=self.gym_a,
+                product=product,
+                quantity=3,
+                movement_type="out",
+                reason="Vente POS",
+            ).exists()
+        )
 
     def test_cash_register_totals_use_cdf_accounting_amounts(self):
         register = CashRegister.objects.create(

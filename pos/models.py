@@ -142,6 +142,8 @@ class Payment(models.Model):
         ("cash", "Cash"),
         ("card", "Card"),
         ("mobile_money", "Mobile Money"),
+        ("bank_transfer", "Virement bancaire"),
+        ("check", "Cheque"),
     )
 
     TRANSACTION_TYPE = (
@@ -153,6 +155,15 @@ class Payment(models.Model):
         ("pending", "Pending"),
         ("success", "Success"),
         ("failed", "Failed"),
+    )
+
+    CATEGORY_CHOICES = (
+        ("subscription", "Abonnement"),
+        ("product", "Vente produit"),
+        ("salary", "Salaire"),
+        ("maintenance", "Maintenance"),
+        ("expense", "Depense"),
+        ("other", "Autre"),
     )
 
     gym = models.ForeignKey(
@@ -186,13 +197,13 @@ class Payment(models.Model):
         related_name="payments"
     )
     currency = models.CharField(
-    max_length=5,
-    choices=(
-        ("USD", "USD"),
-        ("CDF", "CDF"),
-    ),
-    default="USD"
-)
+        max_length=5,
+        choices=(
+            ("USD", "USD"),
+            ("CDF", "CDF"),
+        ),
+        default="USD"
+    )
 
     exchange_rate = models.DecimalField(
         max_digits=10,
@@ -231,6 +242,13 @@ class Payment(models.Model):
         default="in"
     )
 
+    category = models.CharField(
+        max_length=30,
+        choices=CATEGORY_CHOICES,
+        default="other",
+        db_index=True
+    )
+
     transaction_id = models.CharField(
         max_length=200,
         blank=True,
@@ -243,15 +261,29 @@ class Payment(models.Model):
         null=True
     )
 
+    source_app = models.CharField(max_length=50, blank=True, default="")
+
+    source_model = models.CharField(max_length=50, blank=True, default="")
+
+    source_id = models.PositiveIntegerField(null=True, blank=True)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payments_created"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     product = models.ForeignKey(
-    Product,
-    on_delete=models.SET_NULL,
-    null=True,
-    blank=True,
-    related_name="payments"
-)
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payments"
+    )
     class Meta:
         indexes = [
             models.Index(fields=["gym"]),
@@ -260,11 +292,22 @@ class Payment(models.Model):
             models.Index(fields=["gym", "created_at"]),
             models.Index(fields=["type"]),
             models.Index(fields=["currency"]),
+            models.Index(fields=["gym", "category"]),
         ]
 
     def clean(self):
+        if not self.cash_register:
+            raise ValidationError({
+                "cash_register": "Tout mouvement financier doit etre lie a une session de caisse POS."
+            })
+
         if self.cash_register and self.cash_register.gym != self.gym:
             raise ValidationError("La caisse n'appartient pas a ce gym.")
+
+        if self.cash_register and self.cash_register.is_closed and self.pk is None:
+            raise ValidationError({
+                "cash_register": "Impossible d'enregistrer un mouvement sur une caisse fermee."
+            })
 
         if self.cash_register and not self.exchange_rate:
             self.exchange_rate = self.cash_register.exchange_rate
