@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import make_password
 from django.shortcuts import get_object_or_404, redirect, render
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.db.models import Q, Count, Sum, Exists, OuterRef
@@ -10,6 +11,11 @@ import calendar
 import json
 from access.models import AccessLog
 from compte.models import UserGymRole
+from compte.models import User
+from compte.utils import generate_username
+from coaching.models import CoachSpecialty
+from organizations.models import SensitiveActivityLog
+from .forms import CoachSpecialtyForm, InternalEmployeeForm, OrganizationSettingsForm
 from members.models import Member
 from organizations.models import Gym, GymModule
 from pos.models import Payment
@@ -347,6 +353,214 @@ def switch_gym(request, gym_id):
 
     # Redirection vers le dashboard du gym
     return redirect('core:gym_dashboard', gym_id=gym.id)
+
+
+def _owner_settings_allowed(request):
+    return bool(
+        request.user.is_authenticated
+        and getattr(request, "is_owner", False)
+        and getattr(request, "organization", None)
+    )
+
+
+def _log_sensitive_action(request, action, target_type="", target_label="", metadata=None, gym=None):
+    if not getattr(request, "organization", None):
+        return
+
+    SensitiveActivityLog.objects.create(
+        organization=request.organization,
+        gym=gym or getattr(request, "gym", None),
+        actor=request.user if request.user.is_authenticated else None,
+        action=action,
+        target_type=target_type,
+        target_label=target_label,
+        metadata={
+            "ip": request.META.get("REMOTE_ADDR", ""),
+            **(metadata or {}),
+        },
+    )
+
+
+@login_required
+def settings_dashboard(request):
+    if not _owner_settings_allowed(request):
+        return HttpResponseForbidden("Acces non autorise")
+
+    organization = request.organization
+    gym = request.gym
+    if not gym:
+        return redirect("core:select_gym")
+
+    active_tab = request.GET.get("tab", "organization")
+    organization_form = OrganizationSettingsForm(instance=organization)
+    employee_form = InternalEmployeeForm(organization=organization)
+    specialty_form = CoachSpecialtyForm()
+
+    if request.method == "POST":
+        action = request.POST.get("action", "")
+
+        if action == "organization":
+            active_tab = "organization"
+            organization_form = OrganizationSettingsForm(request.POST, request.FILES, instance=organization)
+            if organization_form.is_valid():
+                organization_form.save()
+                _log_sensitive_action(
+                    request,
+                    "organization.updated",
+                    "Organization",
+                    organization.name,
+                )
+                messages.success(request, "Informations de l'organisation mises a jour.")
+                return redirect("core:settings")
+
+        elif action == "employee_create":
+            active_tab = "employees"
+            employee_form = InternalEmployeeForm(request.POST, organization=organization)
+            if employee_form.is_valid():
+                selected_gym = employee_form.cleaned_data["gym"]
+                username = generate_username(
+                    employee_form.cleaned_data["first_name"],
+                    employee_form.cleaned_data["last_name"],
+                )
+                employee = User.objects.create(
+                    username=username,
+                    first_name=employee_form.cleaned_data["first_name"],
+                    last_name=employee_form.cleaned_data["last_name"],
+                    email=employee_form.cleaned_data["email"],
+                    password=make_password("12345"),
+                    is_active=employee_form.cleaned_data["is_active"],
+                    is_staff=False,
+                )
+                role = UserGymRole.objects.create(
+                    user=employee,
+                    gym=selected_gym,
+                    role=employee_form.cleaned_data["role"],
+                    is_active=employee_form.cleaned_data["is_active"],
+                )
+                _log_sensitive_action(
+                    request,
+                    "employee.created",
+                    "UserGymRole",
+                    f"{employee.username} - {role.get_role_display()} ({selected_gym.name})",
+                    metadata={"role": role.role, "employee_id": employee.id},
+                    gym=selected_gym,
+                )
+                messages.success(
+                    request,
+                    f"Employe cree : {username}. Mot de passe par defaut : 12345",
+                )
+                return redirect("core:settings")
+
+        elif action in ["employee_activate", "employee_deactivate", "employee_reset_password"]:
+            active_tab = "employees"
+            role = get_object_or_404(
+                UserGymRole.objects.select_related("user", "gym"),
+                id=request.POST.get("role_id"),
+                gym__organization=organization,
+            )
+            if role.role == "owner":
+                return HttpResponseForbidden("Impossible de modifier un Owner ici.")
+
+            if action == "employee_reset_password":
+                role.user.password = make_password("12345")
+                role.user.save(update_fields=["password"])
+                _log_sensitive_action(
+                    request,
+                    "employee.password_reset",
+                    "User",
+                    role.user.username,
+                    metadata={"employee_id": role.user_id},
+                    gym=role.gym,
+                )
+                messages.success(request, f"Mot de passe reinitialise pour {role.user.username} : 12345")
+                return redirect("core:settings")
+
+            if role.user_id == request.user.id:
+                messages.error(request, "Vous ne pouvez pas vous desactiver vous-meme.")
+                return redirect("core:settings")
+
+            should_activate = action == "employee_activate"
+            role.is_active = should_activate
+            role.save(update_fields=["is_active"])
+            role.user.is_active = should_activate
+            role.user.save(update_fields=["is_active"])
+            _log_sensitive_action(
+                request,
+                "employee.activated" if should_activate else "employee.deactivated",
+                "UserGymRole",
+                role.user.username,
+                metadata={"employee_id": role.user_id, "role": role.role},
+                gym=role.gym,
+            )
+            status_label = "active" if should_activate else "desactive"
+            messages.success(request, f"Employe {role.user.username} {status_label}.")
+            return redirect("core:settings")
+
+        elif action == "specialty_create":
+            active_tab = "specialties"
+            specialty_form = CoachSpecialtyForm(request.POST)
+            if specialty_form.is_valid():
+                name = specialty_form.cleaned_data["name"].strip()
+                specialty, created = CoachSpecialty.objects.get_or_create(
+                    gym=gym,
+                    name=name,
+                    defaults={"is_active": True},
+                )
+                if not created and not specialty.is_active:
+                    specialty.is_active = True
+                    specialty.save(update_fields=["is_active"])
+                _log_sensitive_action(
+                    request,
+                    "coach_specialty.created" if created else "coach_specialty.reactivated",
+                    "CoachSpecialty",
+                    specialty.name,
+                    gym=gym,
+                )
+                messages.success(request, f"Specialite coach enregistree : {specialty.name}")
+                return redirect("core:settings")
+
+        elif action in ["specialty_activate", "specialty_deactivate"]:
+            active_tab = "specialties"
+            specialty = get_object_or_404(CoachSpecialty, id=request.POST.get("specialty_id"), gym=gym)
+            specialty.is_active = action == "specialty_activate"
+            specialty.save(update_fields=["is_active"])
+            _log_sensitive_action(
+                request,
+                "coach_specialty.activated" if specialty.is_active else "coach_specialty.deactivated",
+                "CoachSpecialty",
+                specialty.name,
+                gym=gym,
+            )
+            messages.success(request, f"Specialite {specialty.name} mise a jour.")
+            return redirect("core:settings")
+
+    employee_roles = (
+        UserGymRole.objects.filter(gym__organization=organization)
+        .exclude(role="owner")
+        .select_related("user", "gym")
+        .order_by("gym__name", "user__first_name", "user__last_name")
+    )
+    specialties = CoachSpecialty.objects.filter(gym=gym).order_by("name")
+    activity_logs = (
+        SensitiveActivityLog.objects.filter(organization=organization)
+        .select_related("actor", "gym")
+        .order_by("-created_at")[:50]
+    )
+
+    context = {
+        "organization": organization,
+        "gym": gym,
+        "organization_form": organization_form,
+        "employee_form": employee_form,
+        "specialty_form": specialty_form,
+        "employee_roles": employee_roles,
+        "specialties": specialties,
+        "activity_logs": activity_logs,
+        "active_tab": active_tab,
+        "nav_active": "parametres",
+    }
+    return render(request, "core/settings.html", context)
+
 
 @login_required
 def gym_dashboard(request, gym_id):

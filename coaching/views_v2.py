@@ -74,7 +74,7 @@ def coach_create(request):
     gym = request.gym
 
     if request.method == "POST":
-        form = CoachForm(request.POST)
+        form = CoachForm(request.POST, gym=gym)
         if form.is_valid():
             coach = form.save(commit=False)
             coach.gym = gym
@@ -82,7 +82,7 @@ def coach_create(request):
             messages.success(request, f'Coach "{coach.name}" cree avec succes.')
             return redirect("coaching:detail", coach_id=coach.id)
     else:
-        form = CoachForm()
+        form = CoachForm(gym=gym)
 
     return render(
         request,
@@ -97,13 +97,13 @@ def coach_update(request, coach_id):
     coach = get_object_or_404(Coach, id=coach_id, gym=request.gym)
 
     if request.method == "POST":
-        form = CoachForm(request.POST, instance=coach)
+        form = CoachForm(request.POST, instance=coach, gym=request.gym)
         if form.is_valid():
             form.save()
             messages.success(request, f'Coach "{coach.name}" modifie avec succes.')
             return redirect("coaching:detail", coach_id=coach.id)
     else:
-        form = CoachForm(instance=coach)
+        form = CoachForm(instance=coach, gym=request.gym)
 
     return render(
         request,

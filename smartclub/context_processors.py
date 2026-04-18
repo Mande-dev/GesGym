@@ -7,7 +7,9 @@ def user_owner_check(request):
     """
     user_has_owner_role = False
     
-    if hasattr(request, 'gym') and request.gym and request.user.is_authenticated:
+    if request.user.is_authenticated and getattr(request, 'is_owner', False):
+        user_has_owner_role = True
+    elif hasattr(request, 'gym') and request.gym and request.user.is_authenticated:
         from compte.models import UserGymRole
         role = UserGymRole.objects.filter(
             user=request.user,

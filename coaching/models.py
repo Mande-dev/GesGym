@@ -5,6 +5,50 @@ from django.dispatch import receiver
 from members.models import Member
 from organizations.models import Gym
 
+
+class CoachSpecialty(models.Model):
+    """
+    Specialite configurable par gym pour standardiser les fiches coach.
+    """
+
+    gym = models.ForeignKey(
+        Gym,
+        on_delete=models.CASCADE,
+        related_name="coach_specialties",
+        db_index=True,
+    )
+
+    name = models.CharField(max_length=120)
+
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["gym", "name"],
+                name="unique_coach_specialty_per_gym",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["gym", "is_active"]),
+        ]
+        ordering = ["name"]
+
+    def clean(self):
+        super().clean()
+        if self.name:
+            self.name = self.name.strip()
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
 class Coach(models.Model):
     """
     Coach du gym (version simple V1)

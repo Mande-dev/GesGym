@@ -245,14 +245,24 @@
                         <!-- Gestion des utilisateurs (visible uniquement pour Owner) -->
                         {% if user_has_owner_role %}
                         <li class="nxl-item {% if nav_sub == 'users' %}active{% endif %}" id="nav-settings-users">
-                            <a class="nxl-link" href="{% url 'compte:user_list' %}">
+                            <a class="nxl-link" href="{% url 'core:settings' %}?tab=employees">
                                 <i class="fas fa-users"></i> Utilisateurs & rôles
                             </a>
                         </li>
                         <li class="nxl-item {% if nav_sub == 'create_user' %}active{% endif %}"
                             id="nav-settings-create-user">
-                            <a class="nxl-link" href="{% url 'compte:create_user' %}">
-                                <i class="fas fa-user-plus"></i> Nouvel utilisateur
+                            <a class="nxl-link" href="{% url 'core:settings' %}?tab=organization">
+                                <i class="fas fa-building"></i> Organisation
+                            </a>
+                        </li>
+                        <li class="nxl-item {% if nav_sub == 'coach_specialties' %}active{% endif %}">
+                            <a class="nxl-link" href="{% url 'core:settings' %}?tab=specialties">
+                                <i class="fas fa-dumbbell"></i> SpÃ©cialitÃ©s coach
+                            </a>
+                        </li>
+                        <li class="nxl-item {% if nav_sub == 'activity_logs' %}active{% endif %}">
+                            <a class="nxl-link" href="{% url 'core:settings' %}?tab=activity">
+                                <i class="fas fa-shield-alt"></i> Journal sensible
                             </a>
                         </li>
                         {% endif %}

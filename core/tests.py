@@ -6,8 +6,11 @@ from django.test import TestCase
 from django.urls import reverse
 
 from compte.models import User
+from compte.models import UserGymRole
+from coaching.forms import CoachForm
+from coaching.models import CoachSpecialty
 from members.models import Member
-from organizations.models import Gym, Organization
+from organizations.models import Gym, Organization, SensitiveActivityLog
 from pos.models import CashRegister, Payment
 
 
@@ -188,3 +191,76 @@ class AccountingReportExportTests(TestCase):
         self.assertIn("Abonnement Alice", content)
         self.assertIn("Achat fournitures", content)
         self.assertNotIn("Other Tenant Subscription", content)
+
+    def test_settings_owner_can_create_internal_employee_for_selected_gym(self):
+        response = self.client.post(
+            reverse("core:settings"),
+            {
+                "action": "employee_create",
+                "first_name": "Marc",
+                "last_name": "Manager",
+                "email": "marc@example.com",
+                "gym": self.gym_a.id,
+                "role": "manager",
+                "is_active": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        employee_role = UserGymRole.objects.get(user__email="marc@example.com", gym=self.gym_a)
+        self.assertEqual(employee_role.role, "manager")
+        self.assertTrue(employee_role.is_active)
+        self.assertNotEqual(employee_role.role, "owner")
+        self.assertTrue(
+            SensitiveActivityLog.objects.filter(
+                organization=self.org_a,
+                action="employee.created",
+                target_label__icontains="manager",
+            ).exists()
+        )
+
+    def test_settings_dashboard_renders_v1_sections(self):
+        response = self.client.get(reverse("core:settings"))
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+        self.assertIn("Parametres V1", content)
+        self.assertIn("Utilisateurs & roles", content)
+        self.assertIn("Journal d'activite sensible", content)
+
+    def test_settings_can_update_organization_and_log_activity(self):
+        response = self.client.post(
+            reverse("core:settings"),
+            {
+                "action": "organization",
+                "name": "Org A Updated",
+                "address": "1 Avenue Test",
+                "phone": "+243900000000",
+                "email": "org@example.com",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.org_a.refresh_from_db()
+        self.assertEqual(self.org_a.name, "Org A Updated")
+        self.assertEqual(self.org_a.email, "org@example.com")
+        self.assertTrue(
+            SensitiveActivityLog.objects.filter(
+                organization=self.org_a,
+                action="organization.updated",
+            ).exists()
+        )
+
+    def test_settings_create_coach_specialty_and_form_uses_it(self):
+        response = self.client.post(
+            reverse("core:settings"),
+            {
+                "action": "specialty_create",
+                "name": "Crossfit",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(CoachSpecialty.objects.filter(gym=self.gym_a, name="Crossfit").exists())
+        form = CoachForm(gym=self.gym_a)
+        self.assertIn(("Crossfit", "Crossfit"), form.fields["specialty"].choices)

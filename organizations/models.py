@@ -17,6 +17,12 @@ class Organization(models.Model):
         null=True
     )
 
+    address = models.TextField(blank=True, null=True)
+
+    phone = models.CharField(max_length=30, blank=True, null=True)
+
+    email = models.EmailField(blank=True, null=True)
+
     is_active = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -29,6 +35,56 @@ class Organization(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class SensitiveActivityLog(models.Model):
+    """
+    Journal des actions sensibles visibles par le proprietaire de l'organisation.
+    """
+
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="sensitive_logs",
+        db_index=True,
+    )
+
+    gym = models.ForeignKey(
+        "Gym",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sensitive_logs",
+    )
+
+    actor = models.ForeignKey(
+        "compte.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sensitive_actions",
+    )
+
+    action = models.CharField(max_length=120)
+
+    target_type = models.CharField(max_length=80, blank=True)
+
+    target_label = models.CharField(max_length=255, blank=True)
+
+    metadata = models.JSONField(default=dict, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["organization", "created_at"]),
+            models.Index(fields=["gym", "created_at"]),
+            models.Index(fields=["actor", "created_at"]),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.action} - {self.target_label or self.organization}"
     
 class Module(models.Model):
     """
