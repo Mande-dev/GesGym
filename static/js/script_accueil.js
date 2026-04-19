@@ -20,11 +20,9 @@
     const closeBtn = document.getElementById('closeModal');
     
     // Boutons desktop
-    const loginBtn = document.getElementById('loginBtn');
     const registerBtn = document.getElementById('registerBtn');
     
     // Boutons mobile
-    const mobileLoginBtn = document.getElementById('mobileLoginBtn');
     const mobileRegisterBtn = document.getElementById('mobileRegisterBtn');
     
     // Éléments de la modale inscription
@@ -107,20 +105,9 @@
     });
     }
 
-    // ---------- 7. BOUTONS CONNEXION (desktop et mobile) ----------
-    if (loginBtn) {
-    loginBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        window.location.href = "{% url 'compte:login' %}";
-    });
-    }
-    
-    if (mobileLoginBtn) {
-    mobileLoginBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        window.location.href = "{% url 'compte:login' %}";
-    });
-    }
+    // ---------- 7. BOUTONS CONNEXION ----------
+    // Les boutons Connexion sont des liens HTML classiques.
+    // Ne pas intercepter le clic ici : l'URL Django est deja rendue dans href.
 
     // ---------- 8. EVENT LISTENER : FERMETURE ----------
     closeBtn.addEventListener('click', closeModal);

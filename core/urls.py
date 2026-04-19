@@ -12,7 +12,7 @@ from .views import (
 app_name = "core"
 
 urlpatterns = [
-    path('', dashboard_redirect, name='dashboard_redirect'),
+    path('dashboard/', dashboard_redirect, name='dashboard_redirect'),
     path('select-gym/', select_gym, name='select_gym'),
     path('gym/<int:gym_id>/dashboard/', gym_dashboard, name='gym_dashboard'),
     path('rapport/', reports_dashboard, name='rapport'),
