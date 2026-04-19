@@ -38,5 +38,5 @@ urlpatterns = [
     path('products/', include('products.urls')),
     path('', include('core.urls')),
 ]
-if settings.DEBUG:
+if settings.SERVE_MEDIA:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+.env
+media/
+staticfiles/
+runserver.log
+runserver.err
