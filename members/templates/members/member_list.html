@@ -15,7 +15,8 @@
     <div class="page-header-right ms-auto">
         <div class="page-header-right-items">
             <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#preRegistrationLinkModal">
+                <button type="button" class="btn btn-light" data-bs-toggle="modal"
+                    data-bs-target="#preRegistrationLinkModal">
                     <span class="material-icons me-2" style="font-size:18px;">link</span>
                     <span>Lien de preinscription</span>
                 </button>
@@ -23,10 +24,11 @@
                     <span class="material-icons me-2" style="font-size:18px;">how_to_reg</span>
                     <span>Preinscriptions</span>
                     {% if pending_pre_registrations_count %}
-                        <span class="badge bg-warning text-dark ms-1">{{ pending_pre_registrations_count }}</span>
+                    <span class="badge bg-warning text-dark ms-1">{{ pending_pre_registrations_count }}</span>
                     {% endif %}
                 </a>
-                <a href="javascript:void(0);" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+                <a href="javascript:void(0);" class="btn btn-primary" data-bs-toggle="modal"
+                    data-bs-target="#addMemberModal">
                     <span class="material-icons me-2" style="font-size:18px;">person_add</span>
                     <span>Nouveau Membre</span>
                 </a>
@@ -53,7 +55,8 @@
                 </p>
                 <label class="form-label">Lien public</label>
                 <div class="input-group">
-                    <input type="text" id="preRegistrationUrl" class="form-control" value="{{ pre_registration_url }}" readonly>
+                    <input type="text" id="preRegistrationUrl" class="form-control" value="{{ pre_registration_url }}"
+                        readonly>
                     <button class="btn btn-primary" type="button" onclick="copyPreRegistrationLink()">
                         Copier
                     </button>
@@ -64,186 +67,192 @@
 </div>
 
 <style>
-.members-list-card,
-.members-list-card .custom-card-action {
-    overflow: visible;
-}
-
-.members-list-card .members-list-table-wrapper {
-    position: relative;
-}
-
-.members-list-card .member-action-dropdown .dropdown-menu {
-    z-index: 1085;
-    min-width: 10.5rem;
-    border: 1px solid rgba(148, 163, 184, 0.24);
-    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
-}
-
-.members-list-card .dropdown-row-active > td {
-    position: relative;
-    z-index: 30;
-}
-
-@media (min-width: 992px) {
-    .members-list-card .members-list-table-wrapper {
+    .members-list-card,
+    .members-list-card .custom-card-action {
         overflow: visible;
     }
-}
+
+    .members-list-card .members-list-table-wrapper {
+        position: relative;
+    }
+
+    .members-list-card .member-action-dropdown .dropdown-menu {
+        z-index: 1085;
+        min-width: 10.5rem;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+    }
+
+    .members-list-card .dropdown-row-active>td {
+        position: relative;
+        z-index: 30;
+    }
+
+    @media (min-width: 992px) {
+        .members-list-card .members-list-table-wrapper {
+            overflow: visible;
+        }
+    }
 </style>
 
 <!-- Vue principale : Liste des membres (contenu aligné sur une même largeur) -->
 <div id="membersListView" class="px-0 mx-2">
     <!-- Filtres et recherche -->
- <form method="get">
+    <form method="get">
 
-<div class="card mb-4">
+        <div class="card mb-4">
 
-<div class="card-body">
+            <div class="card-body">
 
-<div class="d-flex align-items-center gap-2 mb-3">
-<span class="material-icons text-muted" style="font-size:20px;">filter_list</span>
-<span class="fw-semibold small text-muted">Filtres avancés</span>
-</div>
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="material-icons text-muted" style="font-size:20px;">filter_list</span>
+                    <span class="fw-semibold small text-muted">Filtres avancés</span>
+                </div>
 
-<div class="row align-items-end g-3">
+                <div class="row align-items-end g-3">
 
-<!-- Recherche -->
+                    <!-- Recherche -->
 
-<div class="col-md-4">
+                    <div class="col-md-4">
 
-<label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
-<span class="material-icons" style="font-size:16px;">search</span>Recherche
-</label>
+                        <label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
+                            <span class="material-icons" style="font-size:16px;">search</span>Recherche
+                        </label>
 
-<div class="input-group">
+                        <div class="input-group">
 
-<span class="input-group-text">
-<span class="material-icons" style="font-size:18px;">search</span>
-</span>
+                            <span class="input-group-text">
+                                <span class="material-icons" style="font-size:18px;">search</span>
+                            </span>
 
-<input
-type="text"
-class="form-control"
-name="search"
-placeholder="Nom, téléphone, email..."
-value="{{ search }}"
->
+                            <input type="text" class="form-control" name="search" placeholder="Nom, téléphone, email..."
+                                value="{{ search }}">
 
-</div>
+                        </div>
 
-</div>
+                    </div>
 
-<!-- Statut -->
+                    <!-- Statut -->
 
-<div class="col-md-2">
+                    <div class="col-md-2">
 
-<label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
-<span class="material-icons" style="font-size:16px;">verified_user</span>Statut
-</label>
+                        <label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
+                            <span class="material-icons" style="font-size:16px;">verified_user</span>Statut
+                        </label>
 
-<select class="form-select" name="status">
-<option value="">Tous</option>
-<option value="active" {% if status == "active" %}selected{% endif %}>Actifs</option>
-<option value="expired" {% if status == "expired" %}selected{% endif %}>Expirés</option>
-<option value="suspended" {% if status == "suspended" %}selected{% endif %}>Suspendus</option>
-<option value="expiring" {% if status == "expiring" %}selected{% endif %}>Expiration proche</option>
-</select>
+                        <select class="form-select" name="status">
+                            <option value="">Tous</option>
+                            <option value="active" {% if status == "active" %}selected{% endif %}>Actifs</option>
+                            <option value="expired" {% if status == "expired" %}selected{% endif %}>Expirés</option>
+                            <option value="suspended" {% if status == "suspended" %}selected{% endif %}>Suspendus
+                            </option>
+                            <option value="expiring" {% if status == "expiring" %}selected{% endif %}>Expiration proche
+                            </option>
+                        </select>
 
-</div>
+                    </div>
 
 
 
-<!-- Formule -->
+                    <!-- Formule -->
 
-<div class="col-md-3">
+                    <div class="col-md-3">
 
-<label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
-<span class="material-icons" style="font-size:16px;">event_available</span>Formule
-</label>
+                        <label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
+                            <span class="material-icons" style="font-size:16px;">event_available</span>Formule
+                        </label>
 
-<select class="form-select" name="plan">
+                        <select class="form-select" name="plan">
 
-<option value="">Tous les abonnements</option>
+                            <option value="">Tous les abonnements</option>
 
-{% for plan in plans %}
+                            {% for plan in plans %}
 
-<option value="{{ plan.id }}"
-{% if plan_selected == plan.id|stringformat:"s" %}selected{% endif %}>
-{{ plan.name }}
-</option>
+                            <option value="{{ plan.id }}"
+                                {% if plan_selected == plan.id|stringformat:"s" %}selected{% endif %}>
+                                {{ plan.name }}
+                            </option>
 
-{% endfor %}
+                            {% endfor %}
 
-</select>
+                        </select>
 
-</div>
+                    </div>
 
-<!-- boutons -->
+                    <!-- boutons -->
 
-<div class="col-md-2 d-flex gap-2">
+                    <div class="col-md-2 d-flex gap-2">
 
-<button class="btn btn-primary w-100">
-Filtrer
-</button>
+                        <button class="btn btn-primary w-100">
+                            Filtrer
+                        </button>
 
-<a href="{% url 'members:member_list' %}" class="btn btn-light-brand w-100">
-Réinitialiser
-</a>
+                        <a href="{% url 'members:member_list' %}" class="btn btn-light-brand w-100">
+                            Réinitialiser
+                        </a>
 
-</div>
+                    </div>
 
-<div class="row align-items-end g-3 mt-1">
+                    <div class="row align-items-end g-3 mt-1">
 
-<div class="col-md-3">
-<label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
-<span class="material-icons" style="font-size:16px;">login</span>Accès
-</label>
-<select class="form-select" name="access">
-<option value="">Tous</option>
-<option value="recent" {% if access_filter == "recent" %}selected{% endif %}>Passés sur 30 jours</option>
-<option value="never" {% if access_filter == "never" %}selected{% endif %}>Jamais venus</option>
-</select>
-</div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
+                                <span class="material-icons" style="font-size:16px;">login</span>Accès
+                            </label>
+                            <select class="form-select" name="access">
+                                <option value="">Tous</option>
+                                <option value="recent" {% if access_filter == "recent" %}selected{% endif %}>Passés sur
+                                    30 jours</option>
+                                <option value="never" {% if access_filter == "never" %}selected{% endif %}>Jamais venus
+                                </option>
+                            </select>
+                        </div>
 
-<div class="col-md-2">
-<label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
-<span class="material-icons" style="font-size:16px;">calendar_today</span>Inscrit du
-</label>
-<input type="date" class="form-control" name="created_from" value="{{ created_from }}">
-</div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
+                                <span class="material-icons" style="font-size:16px;">calendar_today</span>Inscrit du
+                            </label>
+                            <input type="date" class="form-control" name="created_from" value="{{ created_from }}">
+                        </div>
 
-<div class="col-md-2">
-<label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
-<span class="material-icons" style="font-size:16px;">event</span>au
-</label>
-<input type="date" class="form-control" name="created_to" value="{{ created_to }}">
-</div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
+                                <span class="material-icons" style="font-size:16px;">event</span>au
+                            </label>
+                            <input type="date" class="form-control" name="created_to" value="{{ created_to }}">
+                        </div>
 
-<div class="col-md-3">
-<label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
-<span class="material-icons" style="font-size:16px;">sort</span>Trier par
-</label>
-<select class="form-select" name="sort">
-<option value="newest" {% if sort_selected == "newest" %}selected{% endif %}>Plus récents</option>
-<option value="oldest" {% if sort_selected == "oldest" %}selected{% endif %}>Plus anciens</option>
-<option value="name_asc" {% if sort_selected == "name_asc" %}selected{% endif %}>Nom A à Z</option>
-<option value="name_desc" {% if sort_selected == "name_desc" %}selected{% endif %}>Nom Z à A</option>
-<option value="expiry_asc" {% if sort_selected == "expiry_asc" %}selected{% endif %}>Expiration proche</option>
-<option value="expiry_desc" {% if sort_selected == "expiry_desc" %}selected{% endif %}>Expiration lointaine</option>
-<option value="last_access" {% if sort_selected == "last_access" %}selected{% endif %}>Dernier accès</option>
-</select>
-</div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted d-flex align-items-center gap-1 mb-1">
+                                <span class="material-icons" style="font-size:16px;">sort</span>Trier par
+                            </label>
+                            <select class="form-select" name="sort">
+                                <option value="newest" {% if sort_selected == "newest" %}selected{% endif %}>Plus
+                                    récents</option>
+                                <option value="oldest" {% if sort_selected == "oldest" %}selected{% endif %}>Plus
+                                    anciens</option>
+                                <option value="name_asc" {% if sort_selected == "name_asc" %}selected{% endif %}>Nom A à
+                                    Z</option>
+                                <option value="name_desc" {% if sort_selected == "name_desc" %}selected{% endif %}>Nom Z
+                                    à A</option>
+                                <option value="expiry_asc" {% if sort_selected == "expiry_asc" %}selected{% endif %}>
+                                    Expiration proche</option>
+                                <option value="expiry_desc" {% if sort_selected == "expiry_desc" %}selected{% endif %}>
+                                    Expiration lointaine</option>
+                                <option value="last_access" {% if sort_selected == "last_access" %}selected{% endif %}>
+                                    Dernier accès</option>
+                            </select>
+                        </div>
 
-</div>
+                    </div>
 
-</div>
+                </div>
 
-</div>
+            </div>
 
-</div>
+        </div>
 
-</form>
+    </form>
 </div>
 
 
@@ -299,9 +308,11 @@ Réinitialiser
                         <td>
                             <div class="d-flex align-items-center gap-2">
                                 {% if member.photo %}
-                                    <img src="{{ member.photo.url }}" alt="Photo" class="rounded-circle" width="40" height="40" style="object-fit: cover;">
+                                <img src="{{ member.photo.url }}" alt="Photo" class="rounded-circle" width="40"
+                                    height="40" style="object-fit: cover;">
                                 {% else %}
-                                    <span class="material-icons text-secondary" style="font-size:32px;">account_circle</span>
+                                <span class="material-icons text-secondary"
+                                    style="font-size:32px;">account_circle</span>
                                 {% endif %}
                                 <div>
                                     <strong>{{ member.first_name }} {{ member.last_name }}</strong>
@@ -313,7 +324,7 @@ Réinitialiser
                         <td>
                             <div>{{ member.phone }}</div>
                             {% if member.email %}
-                                <small class="text-muted">{{ member.email }}</small>
+                            <small class="text-muted">{{ member.email }}</small>
                             {% endif %}
                         </td>
 
@@ -330,11 +341,11 @@ Réinitialiser
                         <!-- Statut - Badge amélioré -->
                         <td class="text-center">
                             {% if member.computed_status == 'active' %}
-                                <span class="badge bg-success px-3 py-2">Actif</span>
+                            <span class="badge bg-success px-3 py-2">Actif</span>
                             {% elif member.computed_status == 'suspended' %}
-                                <span class="badge bg-warning px-3 py-2 text-dark">Suspendu</span>
+                            <span class="badge bg-warning px-3 py-2 text-dark">Suspendu</span>
                             {% else %}
-                                <span class="badge bg-danger px-3 py-2">Expiré</span>
+                            <span class="badge bg-danger px-3 py-2">Expiré</span>
                             {% endif %}
                         </td>
 
@@ -346,28 +357,27 @@ Réinitialiser
                         <!-- Actions -->
                         <td class="text-end">
                             <div class="dropdown member-action-dropdown">
-                                <button class="btn btn-sm btn-light dropdown-toggle"
-                                        data-bs-toggle="dropdown"
-                                        data-bs-boundary="viewport"
-                                        data-bs-offset="0,8"
-                                        aria-expanded="false">
+                                <button class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown"
+                                    data-bs-boundary="viewport" data-bs-offset="0,8" aria-expanded="false">
                                     <span class="material-icons">more_vert</span>
                                 </button>
                                 <div class="dropdown-menu dropdown-menu-end">
                                     <a onclick="openMemberModal({{ member.id }})" class="dropdown-item">
                                         <span class="material-icons me-2">visibility</span>Voir
                                     </a>
-                                    
+
                                     <a onclick="openEditMemberModal({{ member.id }})" class="dropdown-item">
                                         <span class="material-icons me-2">edit</span>Modifier
                                     </a>
                                     {% if request.role == "owner" %}
                                     <div class="dropdown-divider"></div>
-                                    <a href="#" onclick="if(confirm('Supprimer ce membre ?')) { document.getElementById('delete-form-{{ member.id }}').submit(); }" 
-                                       class="dropdown-item text-danger">
+                                    <a href="#"
+                                        onclick="if(confirm('Supprimer ce membre ?')) { document.getElementById('delete-form-{{ member.id }}').submit(); }"
+                                        class="dropdown-item text-danger">
                                         <span class="material-icons me-2">delete</span>Supprimer
                                     </a>
-                                    <form id="delete-form-{{ member.id }}" method="POST" action="{% url 'members:delete_member' member.id %}" style="display:none;">
+                                    <form id="delete-form-{{ member.id }}" method="POST"
+                                        action="{% url 'members:delete_member' member.id %}" style="display:none;">
                                         {% csrf_token %}
                                     </form>
                                     {% endif %}
@@ -401,32 +411,37 @@ Réinitialiser
                 <!-- Pagination identique à la tienne -->
                 {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search }}&status={{ status }}&plan={{ plan_selected }}&access={{ access_filter }}&created_from={{ created_from }}&created_to={{ created_to }}&sort={{ sort_selected }}">
+                    <a class="page-link"
+                        href="?page={{ page_obj.previous_page_number }}&search={{ search }}&status={{ status }}&plan={{ plan_selected }}&access={{ access_filter }}&created_from={{ created_from }}&created_to={{ created_to }}&sort={{ sort_selected }}">
                         <span class="material-icons">chevron_left</span>
                     </a>
                 </li>
                 {% else %}
-                <li class="page-item disabled"><a class="page-link"><span class="material-icons">chevron_left</span></a></li>
+                <li class="page-item disabled"><a class="page-link"><span class="material-icons">chevron_left</span></a>
+                </li>
                 {% endif %}
 
                 {% for num in page_obj.paginator.page_range %}
-                    {% if page_obj.number == num %}
-                        <li class="page-item active"><a class="page-link">{{ num }}</a></li>
-                    {% else %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ num }}&search={{ search }}&status={{ status }}&plan={{ plan_selected }}&access={{ access_filter }}&created_from={{ created_from }}&created_to={{ created_to }}&sort={{ sort_selected }}">{{ num }}</a>
-                        </li>
-                    {% endif %}
+                {% if page_obj.number == num %}
+                <li class="page-item active"><a class="page-link">{{ num }}</a></li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link"
+                        href="?page={{ num }}&search={{ search }}&status={{ status }}&plan={{ plan_selected }}&access={{ access_filter }}&created_from={{ created_from }}&created_to={{ created_to }}&sort={{ sort_selected }}">{{ num }}</a>
+                </li>
+                {% endif %}
                 {% endfor %}
 
                 {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ search }}&status={{ status }}&plan={{ plan_selected }}&access={{ access_filter }}&created_from={{ created_from }}&created_to={{ created_to }}&sort={{ sort_selected }}">
+                    <a class="page-link"
+                        href="?page={{ page_obj.next_page_number }}&search={{ search }}&status={{ status }}&plan={{ plan_selected }}&access={{ access_filter }}&created_from={{ created_from }}&created_to={{ created_to }}&sort={{ sort_selected }}">
                         <span class="material-icons">chevron_right</span>
                     </a>
                 </li>
                 {% else %}
-                <li class="page-item disabled"><a class="page-link"><span class="material-icons">chevron_right</span></a></li>
+                <li class="page-item disabled"><a class="page-link"><span
+                            class="material-icons">chevron_right</span></a></li>
                 {% endif %}
             </ul>
         </div>
@@ -447,15 +462,17 @@ Réinitialiser
                 </div>
                 <div class="card-body">
                     <div class="input-group mb-4">
-                        <span class="input-group-text"><span class="material-icons" style="font-size:18px;">search</span></span>
-                        <input type="text" class="form-control form-control-lg" placeholder="Rechercher par nom, téléphone..." id="checkinSearch" onkeyup="searchCheckin()">
+                        <span class="input-group-text"><span class="material-icons"
+                                style="font-size:18px;">search</span></span>
+                        <input type="text" class="form-control form-control-lg"
+                            placeholder="Rechercher par nom, téléphone..." id="checkinSearch" onkeyup="searchCheckin()">
                     </div>
-                    
+
                     <div class="text-center mb-3 d-flex align-items-center justify-content-center gap-2">
                         <span class="material-icons text-muted" style="font-size:20px;">qr_code</span>
                         <span class="fw-semibold">Ou scanner le QR code</span>
                     </div>
-                    
+
                     <div class="qr-code-container text-center mx-auto mb-4">
                         <div id="qr-reader" style="width: 100%; max-width: 300px; margin: 0 auto; display: none;"></div>
                         <button class="btn btn-primary" onclick="startQRScanner()">
@@ -463,12 +480,12 @@ Réinitialiser
                             Activer le scanner
                         </button>
                     </div>
-                    
+
                     <div id="checkinResult" class="mt-4"></div>
                 </div>
             </div>
         </div>
-        
+
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
@@ -503,13 +520,15 @@ Réinitialiser
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form method="POST" action="{% url 'members:create_member' %}" id="addMemberForm" enctype="multipart/form-data">
+                <form method="POST" action="{% url 'members:create_member' %}" id="addMemberForm"
+                    enctype="multipart/form-data">
                     {% csrf_token %}
 
                     <div class="row">
                         <!-- Photo -->
                         <div class="col-md-4 text-center mb-4">
-                            <div class="member-photo-placeholder mx-auto mb-3" id="photoPreview" style="width:120px;height:120px;border-radius:50%;background:#f1f1f1;display:flex;align-items:center;justify-content:center;">
+                            <div class="member-photo-placeholder mx-auto mb-3" id="photoPreview"
+                                style="width:120px;height:120px;border-radius:50%;background:#f1f1f1;display:flex;align-items:center;justify-content:center;">
                                 <span class="material-icons" style="font-size:48px;color:#aaa;">add_a_photo</span>
                             </div>
                             {{ form.photo }}
@@ -577,8 +596,8 @@ Réinitialiser
                     <div class="row">
                         <!-- Photo -->
                         <div class="col-md-4 text-center mb-4">
-                            <div id="editPhotoPreview" class="member-photo-placeholder mx-auto mb-3 rounded-circle" 
-                                 style="width:120px; height:120px; background:#f1f1f1; display:flex; align-items:center; justify-content:center; overflow:hidden; border:3px solid #fff;">
+                            <div id="editPhotoPreview" class="member-photo-placeholder mx-auto mb-3 rounded-circle"
+                                style="width:120px; height:120px; background:#f1f1f1; display:flex; align-items:center; justify-content:center; overflow:hidden; border:3px solid #fff;">
                                 <span class="material-icons" style="font-size:48px;color:#aaa;">add_a_photo</span>
                             </div>
                             <input type="file" id="edit_photo" name="photo" class="form-control" accept="image/*">
@@ -589,11 +608,13 @@ Réinitialiser
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Prénom <span class="text-danger">*</span></label>
-                                    <input type="text" id="edit_first_name" name="first_name" class="form-control" required>
+                                    <input type="text" id="edit_first_name" name="first_name" class="form-control"
+                                        required>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Nom <span class="text-danger">*</span></label>
-                                    <input type="text" id="edit_last_name" name="last_name" class="form-control" required>
+                                    <input type="text" id="edit_last_name" name="last_name" class="form-control"
+                                        required>
                                 </div>
                             </div>
 
@@ -628,7 +649,7 @@ Réinitialiser
 </div>
 
 <!-- MODAL VOIR UN MEMBRE -->
-<div class="modal fade" id="viewMemberModal" tabindex="-1" aria-hidden="true" >
+<div class="modal fade" id="viewMemberModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -642,7 +663,7 @@ Réinitialiser
                 <div class="member-compact-card mb-4">
                     <div class="row">
                         <div class="col-md-3 text-center">
-                            <div id="viewMemberPhoto" class="member-photo-placeholder rounded-circle mx-auto mb-3" 
+                            <div id="viewMemberPhoto" class="member-photo-placeholder rounded-circle mx-auto mb-3"
                                 style="width: 110px; height: 110px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                                 <span class="material-icons" style="font-size:48px; color:#adb5bd;">person</span>
                             </div>
@@ -650,23 +671,23 @@ Réinitialiser
 
                         <div class="col-md-6">
                             <p class="mb-1 fs-12 text-muted">
-                                <span class="material-icons" style="font-size:14px;">tag</span> 
+                                <span class="material-icons" style="font-size:14px;">tag</span>
                                 ID : <span id="viewMemberId">-</span>
                             </p>
                             <h4 id="viewMemberName" class="mb-1">-</h4>
-                            
+
                             <!-- Username -->
                             <p class="mb-2">
-                                <span class="material-icons" style="font-size:14px;">alternate_email</span> 
+                                <span class="material-icons" style="font-size:14px;">alternate_email</span>
                                 Username : <strong id="viewMemberUsername">-</strong>
                             </p>
 
                             <p class="mb-1">
-                                <span class="material-icons" style="font-size:14px;">phone</span> 
+                                <span class="material-icons" style="font-size:14px;">phone</span>
                                 <span id="viewMemberPhone">-</span>
                             </p>
                             <p class="mb-0">
-                                <span class="material-icons" style="font-size:14px;">email</span> 
+                                <span class="material-icons" style="font-size:14px;">email</span>
                                 <span id="viewMemberEmail">-</span>
                             </p>
                         </div>
@@ -679,46 +700,68 @@ Réinitialiser
                         </div>
                     </div>
                 </div>
-                
-                
+
+
                 <ul class="nav nav-tabs" id="memberTabs" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link active d-flex align-items-center gap-1" id="subscription-tab" data-bs-toggle="tab" href="#subscription">
+                        <a class="nav-link active d-flex align-items-center gap-1" id="subscription-tab"
+                            data-bs-toggle="tab" href="#subscription">
                             <span class="material-icons" style="font-size:18px;">card_membership</span>Abonnement
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center gap-1" id="payments-tab" data-bs-toggle="tab" href="#payments">
+                        <a class="nav-link d-flex align-items-center gap-1" id="payments-tab" data-bs-toggle="tab"
+                            href="#payments">
                             <span class="material-icons" style="font-size:18px;">payments</span>Paiements
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center gap-1" id="access-tab" data-bs-toggle="tab" href="#access">
+                        <a class="nav-link d-flex align-items-center gap-1" id="access-tab" data-bs-toggle="tab"
+                            href="#access">
                             <span class="material-icons" style="font-size:18px;">login</span>Accès
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center gap-1" id="documents-tab" data-bs-toggle="tab" href="#documents">
+                        <a class="nav-link d-flex align-items-center gap-1" id="documents-tab" data-bs-toggle="tab"
+                            href="#documents">
                             <span class="material-icons" style="font-size:18px;">folder</span>Documents
                         </a>
                     </li>
                 </ul>
-                
+
                 <div class="tab-content mt-3">
                     <div class="tab-pane fade show active" id="subscription">
                         <div class="row">
                             <div class="col-md-6">
                                 <table class="table table-borderless">
-                                    <tr><td class="fw-semibold">Formule :</td><td id="viewSubscriptionType">-</td></tr>
-                                    <tr><td class="fw-semibold">Date d'inscription :</td><td id="viewStartDate">-</td></tr>
-                                    <tr><td class="fw-semibold">Date d'expiration :</td><td id="viewExpiryDate">-</td></tr>
+                                    <tr>
+                                        <td class="fw-semibold">Formule :</td>
+                                        <td id="viewSubscriptionType">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-semibold">Date d'inscription :</td>
+                                        <td id="viewStartDate">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-semibold">Date d'expiration :</td>
+                                        <td id="viewExpiryDate">-</td>
+                                    </tr>
                                 </table>
                             </div>
                             <div class="col-md-6">
                                 <table class="table table-borderless">
-                                    <tr><td class="fw-semibold">Prix :</td><td id="viewPrice">0</td></tr>
-                                    <tr><td class="fw-semibold">Payé :</td><td id="viewPaid">0</td></tr>
-                                    <tr><td class="fw-semibold">Reste :</td><td id="viewRemaining">0</td></tr>
+                                    <tr>
+                                        <td class="fw-semibold">Prix :</td>
+                                        <td id="viewPrice">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-semibold">Payé :</td>
+                                        <td id="viewPaid">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-semibold">Reste :</td>
+                                        <td id="viewRemaining">0</td>
+                                    </tr>
                                 </table>
                             </div>
                         </div>
@@ -730,7 +773,7 @@ Réinitialiser
                             <div id="subscriptionHistory"></div>
                         </div>
                     </div>
-                    
+
                     <div class="tab-pane fade" id="payments">
                         <div class="table-responsive">
                             <table class="table table-hover">
@@ -746,7 +789,7 @@ Réinitialiser
                             </table>
                         </div>
                     </div>
-                    
+
                     <div class="tab-pane fade" id="access">
                         <div class="table-responsive">
                             <table class="table table-hover">
@@ -761,7 +804,7 @@ Réinitialiser
                             </table>
                         </div>
                     </div>
-                    
+
                     <div class="tab-pane fade" id="documents">
                         <div class="text-center mb-3">
                             <div class="qr-code-container mx-auto mb-3 text-center">
@@ -771,18 +814,22 @@ Réinitialiser
                                 <span class="material-icons" style="font-size:18px;">download</span> Télécharger QR Code
                             </button>
                         </div>
-                        <div class="member-card-preview-wrapper p-3 rounded-3 mt-4" style="background:#f3f6f9;">
+                        <div class="member-card-preview-wrapper p-4 rounded-4 mt-4 border"
+                            style="background:linear-gradient(135deg,#f8fafc,#eef2f7);">
                             <div class="d-flex align-items-center justify-content-between mb-2">
                                 <h6 class="d-flex align-items-center gap-2 mb-0">
                                     <span class="material-icons" style="font-size:18px;">badge</span>
                                     Carte membre
                                 </h6>
                                 <button class="btn btn-sm btn-outline-primary" onclick="downloadMemberCard()">
-                                    <span class="material-icons" style="font-size:18px;">download</span> Télécharger la carte
+                                    <span class="material-icons" style="font-size:18px;">download</span> Télécharger la
+                                    carte
                                 </button>
                             </div>
-                            <canvas id="memberCardPreview" width="502" height="325" class="w-100 rounded-3" style="max-width:502px;"></canvas>
-                            <small class="text-muted d-block mt-2">Format carte 85 x 55 mm, avec logo organisation, infos membre et QR code.</small>
+                            <canvas id="memberCardPreview" width="502" height="325" class="w-100 rounded-4 border"
+                                style="max-width:502px; box-shadow:0 10px 30px rgba(15,23,42,0.10); background:#fff;"></canvas>
+                            <small class="text-muted d-block mt-2">Format carte 85 x 55 mm, avec logo organisation,
+                                infos membre et QR code.</small>
                         </div>
                         <div class="mt-4">
                             <h6 class="d-flex align-items-center gap-2">
@@ -798,10 +845,8 @@ Réinitialiser
                 <button type="button" class="btn btn-light d-flex align-items-center gap-2" data-bs-dismiss="modal">
                     <span class="material-icons" style="font-size:20px;">close</span>Fermer
                 </button>
-                <button type="button" class="btn d-flex align-items-center gap-2" 
-                        onclick="toggleMemberStatus()" 
-                        id="statusToggleBtn"
-                        style="background-color: #f39c12; color: white;">
+                <button type="button" class="btn d-flex align-items-center gap-2" onclick="toggleMemberStatus()"
+                    id="statusToggleBtn" style="background-color: #f39c12; color: white;">
                     <span class="material-icons" style="font-size:20px;" id="statusIcon">pause_circle</span>
                     <span id="statusBtnText">Suspendre</span>
                 </button>
@@ -842,139 +887,143 @@ Réinitialiser
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    // Initialisation des toasts
-    const toastElements = document.querySelectorAll('.toast');
-    toastElements.forEach(function (toastEl) {
-        const toast = new bootstrap.Toast(toastEl, {
-            autohide: true,
-            delay: 7000,
-            animation: true
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialisation des toasts
+        const toastElements = document.querySelectorAll('.toast');
+        toastElements.forEach(function (toastEl) {
+            const toast = new bootstrap.Toast(toastEl, {
+                autohide: true,
+                delay: 7000,
+                animation: true
+            });
+            toast.show();
         });
-        toast.show();
-    });
 
-    const actionDropdownToggles = document.querySelectorAll('.member-action-dropdown [data-bs-toggle="dropdown"]');
-    actionDropdownToggles.forEach(function (toggleEl) {
-        bootstrap.Dropdown.getOrCreateInstance(toggleEl, {
-            boundary: document.body,
-            popperConfig: function (defaultConfig) {
-                defaultConfig.strategy = "fixed";
-                defaultConfig.modifiers = defaultConfig.modifiers || [];
-                defaultConfig.modifiers.push({
-                    name: "preventOverflow",
-                    options: {
-                        boundary: document.body,
-                        padding: 12
-                    }
-                });
-                return defaultConfig;
-            }
+        const actionDropdownToggles = document.querySelectorAll(
+            '.member-action-dropdown [data-bs-toggle="dropdown"]');
+        actionDropdownToggles.forEach(function (toggleEl) {
+            bootstrap.Dropdown.getOrCreateInstance(toggleEl, {
+                boundary: document.body,
+                popperConfig: function (defaultConfig) {
+                    defaultConfig.strategy = "fixed";
+                    defaultConfig.modifiers = defaultConfig.modifiers || [];
+                    defaultConfig.modifiers.push({
+                        name: "preventOverflow",
+                        options: {
+                            boundary: document.body,
+                            padding: 12
+                        }
+                    });
+                    return defaultConfig;
+                }
+            });
+        });
+
+        document.addEventListener('shown.bs.dropdown', function (event) {
+            const actionDropdown = event.target.closest('.member-action-dropdown');
+            if (!actionDropdown) return;
+            const row = actionDropdown.closest('tr');
+            if (row) row.classList.add('dropdown-row-active');
+        });
+
+        document.addEventListener('hidden.bs.dropdown', function (event) {
+            const actionDropdown = event.target.closest('.member-action-dropdown');
+            if (!actionDropdown) return;
+            const row = actionDropdown.closest('tr');
+            if (row) row.classList.remove('dropdown-row-active');
         });
     });
 
-    document.addEventListener('shown.bs.dropdown', function (event) {
-        const actionDropdown = event.target.closest('.member-action-dropdown');
-        if (!actionDropdown) return;
-        const row = actionDropdown.closest('tr');
-        if (row) row.classList.add('dropdown-row-active');
-    });
-
-    document.addEventListener('hidden.bs.dropdown', function (event) {
-        const actionDropdown = event.target.closest('.member-action-dropdown');
-        if (!actionDropdown) return;
-        const row = actionDropdown.closest('tr');
-        if (row) row.classList.remove('dropdown-row-active');
-    });
-});
-
-function copyPreRegistrationLink() {
-    const input = document.getElementById("preRegistrationUrl");
-    if (!input) return;
-    input.select();
-    input.setSelectionRange(0, 99999);
-    navigator.clipboard.writeText(input.value).catch(() => document.execCommand("copy"));
-}
+    function copyPreRegistrationLink() {
+        const input = document.getElementById("preRegistrationUrl");
+        if (!input) return;
+        input.select();
+        input.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(input.value).catch(() => document.execCommand("copy"));
+    }
 </script>
 
 <script>
-const DEFAULT_ORG_LOGO_URL = "{% static 'avatar/logo_smartclub.png' %}";
+    const DEFAULT_ORG_LOGO_URL = "{% static 'avatar/logo_smartclub.png' %}";
 
-function openMemberModal(memberId) {
-    fetch(`/members/${memberId}/`)
-        .then(response => {
-            if (!response.ok) throw new Error("Erreur serveur");
-            return response.json();
-        })
-        .then(data => {
-            console.log("Données reçues :", data);           // ← Ajoute cette ligne
-            console.log("QR Code reçu :", data.qr_code);     // ← Ajoute cette ligne
-            // === PHOTO ===
-            const photoContainer = document.getElementById("viewMemberPhoto");
-            if (data.photo_url) {
-                photoContainer.innerHTML = `
+    function openMemberModal(memberId) {
+        fetch(`/members/${memberId}/`)
+            .then(response => {
+                if (!response.ok) throw new Error("Erreur serveur");
+                return response.json();
+            })
+            .then(data => {
+                console.log("Données reçues :", data); // ← Ajoute cette ligne
+                console.log("QR Code reçu :", data.qr_code); // ← Ajoute cette ligne
+                // === PHOTO ===
+                const photoContainer = document.getElementById("viewMemberPhoto");
+                if (data.photo_url) {
+                    photoContainer.innerHTML = `
                     <img src="${data.photo_url}" 
                          alt="Photo du membre" 
                          class="rounded-circle" 
                          style="width:100%; height:100%; object-fit: cover;">
                 `;
-            } else {
-                photoContainer.innerHTML = `<span class="material-icons" style="font-size:48px; color:#adb5bd;">person</span>`;
-            }
-
-            // === USERNAME ===
-            document.getElementById("viewMemberUsername").innerText = data.username || "Non défini";
-
-            // === INFORMATIONS DE BASE ===
-            // === ID DU MEMBRE (IMPORTANT POUR LA SUSPENSION) ===
-            document.getElementById("viewMemberId").innerText = data.id || "-";
-            document.getElementById("viewMemberName").innerText = `${data.first_name || ''} ${data.last_name || ''}`.trim() || "-";
-            document.getElementById("viewMemberPhone").innerText = data.phone || "-";
-            document.getElementById("viewMemberEmail").innerText = data.email || "-";
-            document.getElementById("viewMemberStatus").innerText = data.status || "Inconnu";
-
-            // === GÉNÉRATION QR CODE ===
-            const qrCanvas = document.getElementById("memberQRCode");
-            qrCanvas.getContext("2d").clearRect(0, 0, qrCanvas.width, qrCanvas.height); // Nettoyer le canvas
-
-            if (data.qr_code) {
-                try {
-                    QRCode.toCanvas(qrCanvas, data.qr_code, {
-                        width: 160,
-                        margin: 2,
-                        color: { 
-                            dark: "#000000", 
-                            light: "#FFFFFF" 
-                        }
-                    });
-                    console.log("QR Code généré avec succès sur canvas");
-                } catch (err) {
-                    console.error("Erreur lors de la génération du QR Code :", err);
-                    qrCanvas.outerHTML = `<p class="text-danger text-center">Erreur lors de la génération du QR</p>`;
+                } else {
+                    photoContainer.innerHTML =
+                        `<span class="material-icons" style="font-size:48px; color:#adb5bd;">person</span>`;
                 }
-            } else {
-                qrCanvas.outerHTML = `<p class="text-muted text-center">QR code indisponible</p>`;
-            }
 
-            // === ABONNEMENT ===
-            document.getElementById("viewSubscriptionType").innerText = data.subscription_type || "Aucun";
-            document.getElementById("viewStartDate").innerText = data.start_date || "-";
-            document.getElementById("viewExpiryDate").innerText = data.expiration_date || "-";
+                // === USERNAME ===
+                document.getElementById("viewMemberUsername").innerText = data.username || "Non défini";
 
-            // === PAIEMENTS ===
-            document.getElementById("viewPrice").innerText = (data.price || 0) + " USD";
-            document.getElementById("viewPaid").innerText = (data.paid || 0) + " CDF";
-            document.getElementById("viewRemaining").innerText = (data.remaining || 0) + " CDF";
+                // === INFORMATIONS DE BASE ===
+                // === ID DU MEMBRE (IMPORTANT POUR LA SUSPENSION) ===
+                document.getElementById("viewMemberId").innerText = data.id || "-";
+                document.getElementById("viewMemberName").innerText =
+                    `${data.first_name || ''} ${data.last_name || ''}`.trim() || "-";
+                document.getElementById("viewMemberPhone").innerText = data.phone || "-";
+                document.getElementById("viewMemberEmail").innerText = data.email || "-";
+                document.getElementById("viewMemberStatus").innerText = data.status || "Inconnu";
 
-            // Remplir le tableau des paiements
-            let paymentTable = document.getElementById("paymentHistory");
-            paymentTable.innerHTML = "";
-            data.payments.forEach(p => {
-                let statusBadge = p.status === "success" 
-                    ? `<span class="badge bg-success">Validé</span>` 
-                    : `<span class="badge bg-danger">Refusé</span>`;
-                
-                paymentTable.innerHTML += `
+                // === GÉNÉRATION QR CODE ===
+                const qrCanvas = document.getElementById("memberQRCode");
+                qrCanvas.getContext("2d").clearRect(0, 0, qrCanvas.width, qrCanvas.height); // Nettoyer le canvas
+
+                if (data.qr_code) {
+                    try {
+                        QRCode.toCanvas(qrCanvas, data.qr_code, {
+                            width: 160,
+                            margin: 2,
+                            color: {
+                                dark: "#000000",
+                                light: "#FFFFFF"
+                            }
+                        });
+                        console.log("QR Code généré avec succès sur canvas");
+                    } catch (err) {
+                        console.error("Erreur lors de la génération du QR Code :", err);
+                        qrCanvas.outerHTML =
+                            `<p class="text-danger text-center">Erreur lors de la génération du QR</p>`;
+                    }
+                } else {
+                    qrCanvas.outerHTML = `<p class="text-muted text-center">QR code indisponible</p>`;
+                }
+
+                // === ABONNEMENT ===
+                document.getElementById("viewSubscriptionType").innerText = data.subscription_type || "Aucun";
+                document.getElementById("viewStartDate").innerText = data.start_date || "-";
+                document.getElementById("viewExpiryDate").innerText = data.expiration_date || "-";
+
+                // === PAIEMENTS ===
+                document.getElementById("viewPrice").innerText = (data.price || 0) + " USD";
+                document.getElementById("viewPaid").innerText = (data.paid || 0) + " CDF";
+                document.getElementById("viewRemaining").innerText = (data.remaining || 0) + " CDF";
+
+                // Remplir le tableau des paiements
+                let paymentTable = document.getElementById("paymentHistory");
+                paymentTable.innerHTML = "";
+                data.payments.forEach(p => {
+                    let statusBadge = p.status === "success" ?
+                        `<span class="badge bg-success">Validé</span>` :
+                        `<span class="badge bg-danger">Refusé</span>`;
+
+                    paymentTable.innerHTML += `
                     <tr>
                         <td>${p.date}</td>
                         <td>${p.amount} CDF</td>
@@ -982,368 +1031,496 @@ function openMemberModal(memberId) {
                         <td>${statusBadge}</td>
                     </tr>
                 `;
-            });
-            currentMemberId = data.id;
-            currentMemberStatus = data.status;
-            currentMemberData = data;
-            // Remplir le tableau des accès
-            let accessTable = document.getElementById("accessHistory");
-            accessTable.innerHTML = "";
-            data.access_logs.forEach(log => {
-                let statusBadge = log.status 
-                    ? `<span class="badge bg-success">Autorisé</span>` 
-                    : `<span class="badge bg-danger">Refusé</span>`;
-                
-                accessTable.innerHTML += `
+                });
+                currentMemberId = data.id;
+                currentMemberStatus = data.status;
+                currentMemberData = data;
+                // Remplir le tableau des accès
+                let accessTable = document.getElementById("accessHistory");
+                accessTable.innerHTML = "";
+                data.access_logs.forEach(log => {
+                    let statusBadge = log.status ?
+                        `<span class="badge bg-success">Autorisé</span>` :
+                        `<span class="badge bg-danger">Refusé</span>`;
+
+                    accessTable.innerHTML += `
                     <tr>
                         <td>${log.date}</td>
                         <td>${log.time}</td>
                         <td>${log.device}</td>
                     </tr>
                 `;
-            
-            
+
+
+                });
+                updateStatusButton();
+                renderMemberCardPreview(data);
+                // Ouvrir le modal
+                const modal = new bootstrap.Modal(document.getElementById('viewMemberModal'));
+                modal.show();
+
+            })
+            .catch(error => {
+                console.error("Erreur lors du chargement du membre :", error);
+                alert("Impossible de charger les détails du membre. Veuillez réessayer.");
             });
-            updateStatusButton();
-            renderMemberCardPreview(data);
-            // Ouvrir le modal
-            const modal = new bootstrap.Modal(document.getElementById('viewMemberModal'));
-            modal.show();
-
-        })
-        .catch(error => {
-            console.error("Erreur lors du chargement du membre :", error);
-            alert("Impossible de charger les détails du membre. Veuillez réessayer.");
-        });
-}
-
-function updateStatusButton() {
-    const btn = document.getElementById("statusToggleBtn");
-    const text = document.getElementById("statusBtnText");
-    const icon = document.getElementById("statusIcon");
-
-    if (currentMemberStatus === "suspended") {
-        btn.style.backgroundColor = "#27ae60";
-        text.textContent = "Réactiver";
-        icon.textContent = "play_circle";
-    } else {
-        btn.style.backgroundColor = "#f39c12";
-        text.textContent = "Suspendre";
-        icon.textContent = "pause_circle";
-    }
-}
-function downloadQRCode() {
-    const canvas = document.getElementById("memberQRCode");
-    if (!canvas || canvas.tagName !== "CANVAS") {
-        alert("Aucun QR Code disponible à télécharger.");
-        return;
     }
 
-    const link = document.createElement("a");
-    link.download = `qr_${document.getElementById("viewMemberName").innerText.replace(/\s+/g, '_')}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-}
+    function updateStatusButton() {
+        const btn = document.getElementById("statusToggleBtn");
+        const text = document.getElementById("statusBtnText");
+        const icon = document.getElementById("statusIcon");
 
+        if (currentMemberStatus === "suspended") {
+            btn.style.backgroundColor = "#27ae60";
+            text.textContent = "Réactiver";
+            icon.textContent = "play_circle";
+        } else {
+            btn.style.backgroundColor = "#f39c12";
+            text.textContent = "Suspendre";
+            icon.textContent = "pause_circle";
+        }
+    }
 
-// === OUVRIR MODAL D'ÉDITION ===
-function renderQRCodeCanvas(canvas, value, width) {
-    return new Promise((resolve, reject) => {
-        QRCode.toCanvas(canvas, value || "-", {
-            width: width,
-            margin: 1,
-            color: {
-                dark: "#111827",
-                light: "#ffffff"
-            }
-        }, error => error ? reject(error) : resolve(canvas));
-    });
-}
-
-function loadCanvasImage(src) {
-    return new Promise(resolve => {
-        if (!src) {
-            resolve(null);
+    function downloadQRCode() {
+        const canvas = document.getElementById("memberQRCode");
+        if (!canvas || canvas.tagName !== "CANVAS") {
+            alert("Aucun QR Code disponible à télécharger.");
             return;
         }
-        const image = new Image();
-        image.crossOrigin = "anonymous";
-        image.onload = () => resolve(image);
-        image.onerror = () => resolve(null);
-        image.src = src;
-    });
-}
 
-function drawRoundRect(ctx, x, y, width, height, radius) {
-    const r = Math.min(radius, width / 2, height / 2);
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + width, y, x + width, y + height, r);
-    ctx.arcTo(x + width, y + height, x, y + height, r);
-    ctx.arcTo(x, y + height, x, y, r);
-    ctx.arcTo(x, y, x + width, y, r);
-    ctx.closePath();
-}
-
-function drawContainedImage(ctx, image, x, y, width, height) {
-    if (!image) return;
-    const ratio = Math.min(width / image.width, height / image.height);
-    const drawWidth = image.width * ratio;
-    const drawHeight = image.height * ratio;
-    ctx.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
-}
-
-function drawMemberInitials(ctx, member, x, y, size) {
-    const initials = `${member.first_name || ""} ${member.last_name || ""}`
-        .trim()
-        .split(/\s+/)
-        .slice(0, 2)
-        .map(part => part[0] || "")
-        .join("")
-        .toUpperCase() || "M";
-    ctx.fillStyle = "#e0f2fe";
-    drawRoundRect(ctx, x, y, size, size, size / 2);
-    ctx.fill();
-    ctx.fillStyle = "#075985";
-    ctx.font = `700 ${Math.round(size * 0.35)}px Arial`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(initials, x + size / 2, y + size / 2);
-}
-
-async function drawMemberCard(canvas, member, scale = 1) {
-    const ctx = canvas.getContext("2d");
-    const width = canvas.width;
-    const height = canvas.height;
-    const s = scale;
-    const logoUrl = member.organization_logo_url || DEFAULT_ORG_LOGO_URL;
-    const [logo, photo] = await Promise.all([
-        loadCanvasImage(logoUrl),
-        loadCanvasImage(member.photo_url)
-    ]);
-
-    ctx.clearRect(0, 0, width, height);
-
-    ctx.fillStyle = "#f8fafc";
-    drawRoundRect(ctx, 0, 0, width, height, 36 * s);
-    ctx.fill();
-
-    ctx.strokeStyle = "#dbe3ea";
-    ctx.lineWidth = 2 * s;
-    ctx.stroke();
-
-    const accent = ctx.createLinearGradient(width * 0.66, 0, width, height);
-    accent.addColorStop(0, "#042f2e");
-    accent.addColorStop(0.55, "#0f766e");
-    accent.addColorStop(1, "#f59e0b");
-    ctx.fillStyle = accent;
-    drawRoundRect(ctx, 666 * s, 0, 338 * s, 650 * s, 36 * s);
-    ctx.fill();
-
-    ctx.globalAlpha = 0.11;
-    ctx.fillStyle = "#0f766e";
-    ctx.beginPath();
-    ctx.arc(154 * s, 580 * s, 210 * s, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-
-    ctx.fillStyle = "#ffffff";
-    drawRoundRect(ctx, 48 * s, 44 * s, 176 * s, 84 * s, 20 * s);
-    ctx.fill();
-    drawContainedImage(ctx, logo, 68 * s, 62 * s, 136 * s, 48 * s);
-
-    ctx.fillStyle = "#0f172a";
-    ctx.font = `700 ${26 * s}px Arial`;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
-    ctx.fillText((member.organization_name || "Organisation").toUpperCase(), 252 * s, 76 * s);
-    ctx.font = `600 ${15 * s}px Arial`;
-    ctx.fillStyle = "#64748b";
-    ctx.fillText("CARTE MEMBRE", 252 * s, 106 * s);
-
-    if (photo) {
-        ctx.save();
-        drawRoundRect(ctx, 58 * s, 186 * s, 156 * s, 156 * s, 34 * s);
-        ctx.clip();
-        ctx.drawImage(photo, 58 * s, 186 * s, 156 * s, 156 * s);
-        ctx.restore();
-    } else {
-        drawMemberInitials(ctx, member, 58 * s, 186 * s, 156 * s);
+        const link = document.createElement("a");
+        link.download = `qr_${document.getElementById("viewMemberName").innerText.replace(/\s+/g, '_')}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
     }
 
-    const fullName = `${member.first_name || ""} ${member.last_name || ""}`.trim() || "Membre";
-    ctx.fillStyle = "#0f172a";
-    ctx.font = `700 ${38 * s}px Arial`;
-    ctx.fillText(fullName, 252 * s, 220 * s);
 
-    ctx.fillStyle = "#ffffff";
-    drawRoundRect(ctx, 252 * s, 252 * s, 344 * s, 58 * s, 18 * s);
-    ctx.fill();
-    ctx.fillStyle = "#64748b";
-    ctx.font = `600 ${13 * s}px Arial`;
-    ctx.fillText("USERNAME", 274 * s, 276 * s);
-    ctx.fillStyle = "#0f172a";
-    ctx.font = `700 ${21 * s}px Arial`;
-    ctx.fillText(member.username || "-", 274 * s, 300 * s);
-
-    ctx.fillStyle = "#ffffff";
-    drawRoundRect(ctx, 252 * s, 330 * s, 344 * s, 58 * s, 18 * s);
-    ctx.fill();
-    ctx.fillStyle = "#64748b";
-    ctx.font = `700 ${13 * s}px Arial`;
-    ctx.textAlign = "left";
-    ctx.fillText("TELEPHONE", 274 * s, 354 * s);
-    ctx.fillStyle = "#0f172a";
-    ctx.font = `700 ${21 * s}px Arial`;
-    ctx.fillText(member.phone || "-", 274 * s, 378 * s);
-
-    ctx.fillStyle = "#0f766e";
-    drawRoundRect(ctx, 58 * s, 388 * s, 538 * s, 76 * s, 24 * s);
-    ctx.fill();
-    ctx.fillStyle = "#ffffff";
-    ctx.font = `700 ${18 * s}px Arial`;
-    ctx.textAlign = "left";
-    ctx.fillText(`ID MEMBRE #${member.id || "-"}`, 86 * s, 432 * s);
-
-    const qrCanvas = document.createElement("canvas");
-    qrCanvas.width = 224 * s;
-    qrCanvas.height = 224 * s;
-    await renderQRCodeCanvas(qrCanvas, member.qr_code, 224 * s);
-
-    ctx.fillStyle = "#ffffff";
-    drawRoundRect(ctx, 724 * s, 150 * s, 232 * s, 232 * s, 30 * s);
-    ctx.fill();
-    ctx.drawImage(qrCanvas, 728 * s, 154 * s, 224 * s, 224 * s);
-
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#ffffff";
-    ctx.font = `700 ${20 * s}px Arial`;
-    ctx.fillText("SCAN ACCES", 840 * s, 424 * s);
-    ctx.font = `500 ${13 * s}px Arial`;
-    ctx.fillStyle = "rgba(255,255,255,0.76)";
-    ctx.fillText("QR personnel du membre", 840 * s, 452 * s);
-
-    ctx.textAlign = "left";
-    ctx.fillStyle = "#64748b";
-    ctx.font = `600 ${13 * s}px Arial`;
-    ctx.fillText("Carte valable selon les droits actifs du membre dans le systeme.", 58 * s, 586 * s);
-}
-
-async function renderMemberCardPreview(member) {
-    const canvas = document.getElementById("memberCardPreview");
-    if (!canvas || !member) return;
-    await drawMemberCard(canvas, member, 0.5);
-}
-
-async function downloadMemberCard() {
-    if (!currentMemberData) {
-        alert("Aucun membre sélectionné.");
-        return;
-    }
-
-    const canvas = document.createElement("canvas");
-    canvas.width = 1004;
-    canvas.height = 650;
-    await drawMemberCard(canvas, currentMemberData, 1);
-
-    const fullName = `${currentMemberData.first_name || ""}_${currentMemberData.last_name || ""}`.replace(/\s+/g, "_");
-    const link = document.createElement("a");
-    link.download = `carte_membre_${fullName || currentMemberData.id}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-}
-
-function openEditMemberModal(memberId) {
-    fetch(`/members/edit/${memberId}/`)
-        .then(response => response.json())
-        .then(data => {
-            // Remplir le formulaire
-            document.getElementById("edit_member_id").value = data.id;
-            document.getElementById("edit_first_name").value = data.first_name || "";
-            document.getElementById("edit_last_name").value = data.last_name || "";
-            document.getElementById("edit_phone").value = data.phone || "";
-            document.getElementById("edit_email").value = data.email || "";
-            document.getElementById("edit_address").value = data.address || "";
-
-            // Prévisualisation photo
-            const preview = document.getElementById("editPhotoPreview");
-            if (data.photo_url) {
-                preview.innerHTML = `<img src="${data.photo_url}" style="width:100%; height:100%; object-fit: cover;">`;
-            } else {
-                preview.innerHTML = `<span class="material-icons" style="font-size:48px;color:#aaa;">add_a_photo</span>`;
-            }
-
-            // Ouvrir le modal
-            const modal = new bootstrap.Modal(document.getElementById('editMemberModal'));
-            modal.show();
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Impossible de charger les données du membre.");
+    // === OUVRIR MODAL D'ÉDITION ===
+    function renderQRCodeCanvas(canvas, value, width) {
+        return new Promise((resolve, reject) => {
+            QRCode.toCanvas(canvas, value || "-", {
+                width: width,
+                margin: 1,
+                color: {
+                    dark: "#111827",
+                    light: "#ffffff"
+                }
+            }, error => error ? reject(error) : resolve(canvas));
         });
-}
+    }
 
-// === SAUVEGARDER LES MODIFICATIONS ===
-function saveEditedMember() {
-    const form = document.getElementById("editMemberForm");
-    const formData = new FormData(form);
-    const memberId = document.getElementById("edit_member_id").value;
-
-    fetch(`/members/edit/${memberId}/`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert("Membre modifié avec succès !");
-            location.reload();        // Recharge la liste pour voir les changements
-        } else {
-            let errorMsg = "Erreurs de validation :\n";
-            for (let field in data.errors) {
-                errorMsg += `- ${field}: ${data.errors[field].join(', ')}\n`;
+    function loadCanvasImage(src) {
+        return new Promise(resolve => {
+            if (!src) {
+                resolve(null);
+                return;
             }
-            alert(errorMsg);
-        }
-    })
-    .catch(error => {
-        console.error("Erreur :", error);
-        alert("Erreur lors de la communication avec le serveur.");
-    });
-}
+            const image = new Image();
+            image.crossOrigin = "anonymous";
+            image.onload = () => resolve(image);
+            image.onerror = () => resolve(null);
+            image.src = src;
+        });
+    }
 
+    function drawRoundRect(ctx, x, y, width, height, radius) {
+        const r = Math.min(radius, width / 2, height / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + width, y, x + width, y + height, r);
+        ctx.arcTo(x + width, y + height, x, y + height, r);
+        ctx.arcTo(x, y + height, x, y, r);
+        ctx.arcTo(x, y, x + width, y, r);
+        ctx.closePath();
+    }
+
+    function drawContainedImage(ctx, image, x, y, width, height) {
+        if (!image) return;
+        const ratio = Math.min(width / image.width, height / image.height);
+        const drawWidth = image.width * ratio;
+        const drawHeight = image.height * ratio;
+        ctx.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
+    }
+
+    function drawMemberInitials(ctx, member, x, y, size) {
+        const initials = `${member.first_name || ""} ${member.last_name || ""}`
+            .trim()
+            .split(/\s+/)
+            .slice(0, 2)
+            .map(part => part[0] || "")
+            .join("")
+            .toUpperCase() || "M";
+        ctx.fillStyle = "#e0f2fe";
+        drawRoundRect(ctx, x, y, size, size, size / 2);
+        ctx.fill();
+        ctx.fillStyle = "#075985";
+        ctx.font = `700 ${Math.round(size * 0.35)}px Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(initials, x + size / 2, y + size / 2);
+    }
+
+    async function drawMemberCard(canvas, member, scale = 1) {
+        const ctx = canvas.getContext("2d");
+        const width = canvas.width;
+        const height = canvas.height;
+        const s = scale;
+
+        const logoUrl = member.organization_logo_url || DEFAULT_ORG_LOGO_URL;
+        const [logo, photo] = await Promise.all([
+            loadCanvasImage(logoUrl),
+            loadCanvasImage(member.photo_url)
+        ]);
+
+        ctx.clearRect(0, 0, width, height);
+
+        // ===== FOND GLOBAL =====
+        const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+        bgGradient.addColorStop(0, "#ffffff");
+        bgGradient.addColorStop(1, "#f8fafc");
+        ctx.fillStyle = bgGradient;
+        drawRoundRect(ctx, 0, 0, width, height, 34 * s);
+        ctx.fill();
+
+        // Bordure externe douce
+        ctx.strokeStyle = "#e2e8f0";
+        ctx.lineWidth = 2 * s;
+        ctx.stroke();
+
+        // ===== BANDE LATERALE PREMIUM =====
+        const sideGradient = ctx.createLinearGradient(width * 0.70, 0, width, height);
+        sideGradient.addColorStop(0, "#0f172a");
+        sideGradient.addColorStop(0.5, "#111827");
+        sideGradient.addColorStop(1, "#1e293b");
+        ctx.fillStyle = sideGradient;
+        drawRoundRect(ctx, 700 * s, 0, 304 * s, 650 * s, 34 * s);
+        ctx.fill();
+
+        // Accent décoratif discret
+        ctx.globalAlpha = 0.06;
+        ctx.fillStyle = "#0f766e";
+        ctx.beginPath();
+        ctx.arc(160 * s, 540 * s, 200 * s, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(830 * s, 110 * s, 140 * s, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // ===== EN-TETE =====
+        // Bloc logo
+        ctx.fillStyle = "#ffffff";
+        drawRoundRect(ctx, 48 * s, 42 * s, 104 * s, 104 * s, 22 * s);
+        ctx.fill();
+
+        if (logo) {
+            drawContainedImage(ctx, logo, 60 * s, 54 * s, 80 * s, 80 * s);
+        } else {
+            ctx.fillStyle = "#cbd5e1";
+            ctx.font = `700 ${22 * s}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("LOGO", 100 * s, 94 * s);
+        }
+
+        // Nom organisation
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = "#0f172a";
+        ctx.font = `700 ${28 * s}px Arial`;
+        ctx.fillText((member.organization_name || "Organisation").toUpperCase(), 180 * s, 82 * s);
+
+        ctx.fillStyle = "#64748b";
+        ctx.font = `600 ${15 * s}px Arial`;
+        ctx.fillText("CARTE MEMBRE OFFICIELLE", 180 * s, 110 * s);
+
+        // Ligne séparatrice
+        ctx.strokeStyle = "#e2e8f0";
+        ctx.lineWidth = 2 * s;
+        ctx.beginPath();
+        ctx.moveTo(48 * s, 164 * s);
+        ctx.lineTo(650 * s, 164 * s);
+        ctx.stroke();
+
+        // ===== PHOTO =====
+        ctx.fillStyle = "#ffffff";
+        drawRoundRect(ctx, 48 * s, 196 * s, 180 * s, 220 * s, 28 * s);
+        ctx.fill();
+
+        ctx.strokeStyle = "#e2e8f0";
+        ctx.lineWidth = 2 * s;
+        ctx.stroke();
+
+        if (photo) {
+            ctx.save();
+            drawRoundRect(ctx, 62 * s, 210 * s, 152 * s, 192 * s, 22 * s);
+            ctx.clip();
+            ctx.drawImage(photo, 62 * s, 210 * s, 152 * s, 192 * s);
+            ctx.restore();
+        } else {
+            drawMemberInitials(ctx, member, 62 * s, 230 * s, 152 * s);
+        }
+
+        // ===== INFOS PRINCIPALES =====
+        const infoX = 260 * s;
+        const infoWidth = 400 * s;
+
+        const fullName = `${member.first_name || ""} ${member.last_name || ""}`.trim() || "Membre";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
+
+        ctx.fillStyle = "#0f172a";
+        ctx.font = `700 ${34 * s}px Arial`;
+        ctx.fillText(fullName, infoX, 238 * s);
+
+        ctx.fillStyle = "#64748b";
+        ctx.font = `600 ${15 * s}px Arial`;
+        ctx.fillText("Identité du membre", infoX, 266 * s);
+
+        // Badge ID
+        ctx.fillStyle = "#ecfeff";
+        drawRoundRect(ctx, infoX, 286 * s, 150 * s, 40 * s, 14 * s);
+        ctx.fill();
+
+        ctx.fillStyle = "#0f766e";
+        ctx.font = `700 ${16 * s}px Arial`;
+        ctx.textBaseline = "middle";
+        ctx.fillText(`ID #${member.id || "-"}`, infoX + 20 * s, 306 * s);
+        ctx.textBaseline = "alphabetic";
+
+        // ===== BLOCS INFOS ALIGNÉS =====
+        function drawInfoBlock(label, value, x, y, w, h) {
+            ctx.fillStyle = "#ffffff";
+            drawRoundRect(ctx, x, y, w, h, 18 * s);
+            ctx.fill();
+
+            ctx.strokeStyle = "#dbe3ea";
+            ctx.lineWidth = 1.5 * s;
+            ctx.stroke();
+
+            // Label
+            ctx.textAlign = "left";
+            ctx.textBaseline = "top";
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = `700 ${11 * s}px Arial`;
+            ctx.fillText(label.toUpperCase(), x + 18 * s, y + 12 * s);
+
+            // Valeur
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = "#0f172a";
+            ctx.font = `700 ${17 * s}px Arial`;
+            ctx.fillText(value || "-", x + 18 * s, y + h - 18 * s);
+
+            ctx.textBaseline = "alphabetic";
+        }
+        drawInfoBlock("Username", member.username || "-", infoX, 346 * s, infoWidth, 64 * s);
+        drawInfoBlock("Téléphone", member.phone || "-", infoX, 426 * s, infoWidth, 64 * s);
+
+        ctx.fillStyle = "#f8fafc";
+        drawRoundRect(ctx, infoX, 506 * s, infoWidth, 78 * s, 20 * s);
+        ctx.fill();
+
+        ctx.strokeStyle = "#dbe3ea";
+        ctx.lineWidth = 1.5 * s;
+        ctx.stroke();
+
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = `700 ${11 * s}px Arial`;
+        ctx.fillText("ABONNEMENT", infoX + 18 * s, 520 * s);
+
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#0f172a";
+        ctx.font = `700 ${17 * s}px Arial`;
+        ctx.fillText(member.subscription_type || "Aucun abonnement", infoX + 18 * s, 555 * s);
+
+        ctx.textBaseline = "alphabetic";
+        ctx.fill();
+
+        ctx.strokeStyle = "#e2e8f0";
+        ctx.lineWidth = 1.5 * s;
+        ctx.stroke();
+
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = `700 ${12 * s}px Arial`;
+        ctx.fillText("ABONNEMENT", 288 * s, 536 * s);
+
+        ctx.fillStyle = "#0f172a";
+        ctx.font = `700 ${22 * s}px Arial`;
+        ctx.fillText(member.subscription_type || "Aucun abonnement", 288 * s, 566 * s);
+
+        // ===== ZONE QR =====
+        const qrCanvas = document.createElement("canvas");
+        qrCanvas.width = 220 * s;
+        qrCanvas.height = 220 * s;
+        await renderQRCodeCanvas(qrCanvas, member.qr_code, 220 * s);
+
+        ctx.fillStyle = "#ffffff";
+        drawRoundRect(ctx, 742 * s, 120 * s, 220 * s, 220 * s, 28 * s);
+        ctx.fill();
+
+        ctx.drawImage(qrCanvas, 742 * s, 120 * s, 220 * s, 220 * s);
+
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `700 ${22 * s}px Arial`;
+        ctx.fillText("SCAN QR", 852 * s, 392 * s);
+
+        ctx.fillStyle = "rgba(255,255,255,0.72)";
+        ctx.font = `500 ${13 * s}px Arial`;
+        ctx.fillText("Accès personnel sécurisé", 852 * s, 418 * s);
+
+        // ===== PETIT BLOC IDENTITÉ À DROITE =====
+        ctx.fillStyle = "rgba(255,255,255,0.08)";
+        drawRoundRect(ctx, 736 * s, 462 * s, 232 * s, 96 * s, 20 * s);
+        ctx.fill();
+
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#cbd5e1";
+        ctx.font = `700 ${11 * s}px Arial`;
+        ctx.fillText("MEMBRE", 756 * s, 490 * s);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `700 ${18 * s}px Arial`;
+        ctx.fillText(fullName.length > 18 ? fullName.substring(0, 18) + "..." : fullName, 756 * s, 518 * s);
+
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = `600 ${12 * s}px Arial`;
+        ctx.fillText(`ID ${member.id || "-"}`, 756 * s, 542 * s);
+
+        // ===== FOOTER =====
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#64748b";
+        ctx.font = `600 ${12 * s}px Arial`;
+        ctx.fillText("Cette carte est personnelle. Sa validité dépend du statut actif du membre dans le système.",
+            48 * s, 614 * s);
+    }
+
+    async function renderMemberCardPreview(member) {
+        const canvas = document.getElementById("memberCardPreview");
+        if (!canvas || !member) return;
+        await drawMemberCard(canvas, member, 0.5);
+    }
+
+    async function downloadMemberCard() {
+        if (!currentMemberData) {
+            alert("Aucun membre sélectionné.");
+            return;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = 1004;
+        canvas.height = 650;
+        await drawMemberCard(canvas, currentMemberData, 1);
+
+        const fullName = `${currentMemberData.first_name || ""}_${currentMemberData.last_name || ""}`.replace(
+            /\s+/g, "_");
+        const link = document.createElement("a");
+        link.download = `carte_membre_${fullName || currentMemberData.id}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    }
+
+    function openEditMemberModal(memberId) {
+        fetch(`/members/edit/${memberId}/`)
+            .then(response => response.json())
+            .then(data => {
+                // Remplir le formulaire
+                document.getElementById("edit_member_id").value = data.id;
+                document.getElementById("edit_first_name").value = data.first_name || "";
+                document.getElementById("edit_last_name").value = data.last_name || "";
+                document.getElementById("edit_phone").value = data.phone || "";
+                document.getElementById("edit_email").value = data.email || "";
+                document.getElementById("edit_address").value = data.address || "";
+
+                // Prévisualisation photo
+                const preview = document.getElementById("editPhotoPreview");
+                if (data.photo_url) {
+                    preview.innerHTML =
+                        `<img src="${data.photo_url}" style="width:100%; height:100%; object-fit: cover;">`;
+                } else {
+                    preview.innerHTML =
+                        `<span class="material-icons" style="font-size:48px;color:#aaa;">add_a_photo</span>`;
+                }
+
+                // Ouvrir le modal
+                const modal = new bootstrap.Modal(document.getElementById('editMemberModal'));
+                modal.show();
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Impossible de charger les données du membre.");
+            });
+    }
+
+    // === SAUVEGARDER LES MODIFICATIONS ===
+    function saveEditedMember() {
+        const form = document.getElementById("editMemberForm");
+        const formData = new FormData(form);
+        const memberId = document.getElementById("edit_member_id").value;
+
+        fetch(`/members/edit/${memberId}/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Membre modifié avec succès !");
+                    location.reload(); // Recharge la liste pour voir les changements
+                } else {
+                    let errorMsg = "Erreurs de validation :\n";
+                    for (let field in data.errors) {
+                        errorMsg += `- ${field}: ${data.errors[field].join(', ')}\n`;
+                    }
+                    alert(errorMsg);
+                }
+            })
+            .catch(error => {
+                console.error("Erreur :", error);
+                alert("Erreur lors de la communication avec le serveur.");
+            });
+    }
 </script>
 <script>
-let currentMemberId = null;
-let currentMemberStatus = null;
-let currentMemberData = null;
-function toggleMemberStatus() {
-    if (!currentMemberId) return;
+    let currentMemberId = null;
+    let currentMemberStatus = null;
+    let currentMemberData = null;
 
-    if (currentMemberStatus === "suspended") {
-        if (confirm("Réactiver ce membre ? Son abonnement reprendra sans perte de jours.")) {
-            fetch(`/members/reactivate/${currentMemberId}/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
-            }).then(() => location.reload());
+    function toggleMemberStatus() {
+        if (!currentMemberId) return;
+
+        if (currentMemberStatus === "suspended") {
+            if (confirm("Réactiver ce membre ? Son abonnement reprendra sans perte de jours.")) {
+                fetch(`/members/reactivate/${currentMemberId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                }).then(() => location.reload());
+            }
+        } else {
+            const confirmModal = new bootstrap.Modal(document.getElementById('suspendConfirmModal'));
+            confirmModal.show();
         }
-    } else {
-        const confirmModal = new bootstrap.Modal(document.getElementById('suspendConfirmModal'));
-        confirmModal.show();
     }
-}
 
-function confirmSuspend() {
-    if (!currentMemberId) return;
+    function confirmSuspend() {
+        if (!currentMemberId) return;
 
-    fetch(`/members/suspend/${currentMemberId}/`, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
-    }).then(() => location.reload());
-}
+        fetch(`/members/suspend/${currentMemberId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        }).then(() => location.reload());
+    }
 </script>
 
 {% endblock %}
