@@ -2,12 +2,23 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.forms import SetPasswordForm
 
 
 User = get_user_model()
 
 
 class CustomAuthenticationForm(AuthenticationForm):
+    remember_me = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "rounded border-gray-300 text-[#004e92] focus:ring-[#004e92]",
+            }
+        ),
+    )
 
     username = forms.CharField(
         widget=forms.TextInput(attrs={
@@ -22,8 +33,33 @@ class CustomAuthenticationForm(AuthenticationForm):
             "placeholder": "Mot de passe"
         })
     )
-    
-    
+
+
+class StyledPasswordResetForm(PasswordResetForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["email"].widget.attrs.update({
+            "class": "w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004e92]",
+            "placeholder": "Adresse email",
+            "autocomplete": "email",
+        })
+
+
+class StyledSetPasswordForm(SetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["new_password1"].widget.attrs.update({
+            "class": "w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004e92]",
+            "placeholder": "Nouveau mot de passe",
+            "autocomplete": "new-password",
+        })
+        self.fields["new_password2"].widget.attrs.update({
+            "class": "w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#004e92]",
+            "placeholder": "Confirmer le nouveau mot de passe",
+            "autocomplete": "new-password",
+        })
+
+
 class CreateUserForm(forms.Form):
     first_name = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-control'}))
     last_name = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-control'}))

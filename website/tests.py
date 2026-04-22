@@ -33,4 +33,4 @@ class PublicRouteTests(TestCase):
     def test_landing_uses_versioned_script_to_avoid_stale_browser_cache(self):
         response = self.client.get("/")
 
-        self.assertContains(response, "script_accueil.js?v=login-fix-2")
+        self.assertContains(response, "script_accueil.js?v=landing-premium-v2-faq")

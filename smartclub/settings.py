@@ -320,6 +320,23 @@ EMAIL_USE_TLS = _env_bool("DJANGO_EMAIL_USE_TLS", not DEBUG)
 EMAIL_USE_SSL = _env_bool("DJANGO_EMAIL_USE_SSL", False)
 DEFAULT_FROM_EMAIL = _env("DJANGO_DEFAULT_FROM_EMAIL", "noreply@gesgym.local")
 SERVER_EMAIL = _env("DJANGO_SERVER_EMAIL", DEFAULT_FROM_EMAIL)
+SOCIAL_LINKS = [
+    {
+        "label": "Facebook",
+        "icon": "fab fa-facebook-f",
+        "url": _env("DJANGO_SOCIAL_FACEBOOK_URL", ""),
+    },
+    {
+        "label": "Twitter/X",
+        "icon": "fab fa-twitter",
+        "url": _env("DJANGO_SOCIAL_TWITTER_URL", ""),
+    },
+    {
+        "label": "GitHub",
+        "icon": "fab fa-github",
+        "url": _env("DJANGO_SOCIAL_GITHUB_URL", ""),
+    },
+]
 
 LOG_LEVEL = _env("DJANGO_LOG_LEVEL", "INFO")
 LOGGING = {

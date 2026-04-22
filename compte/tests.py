@@ -1,5 +1,9 @@
-from django.test import TestCase
+from django.contrib.auth.tokens import default_token_generator
+from django.core import mail
+from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 
 from compte.models import User, UserGymRole
 from organizations.models import Gym, GymModule, Module, Organization
@@ -126,6 +130,117 @@ class OwnerLoginAndGymSwitchTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("Aucune salle active", response.content.decode("utf-8"))
+
+
+class LoginConfigurationTests(TestCase):
+    def setUp(self):
+        self.organization = Organization.objects.create(name="Remember Org", slug="remember-org")
+        self.user = User.objects.create_user(
+            username="remember-owner",
+            password="RememberPass123",
+            email="remember@example.com",
+            owned_organization=self.organization,
+        )
+
+    def test_login_without_remember_me_expires_at_browser_close(self):
+        response = self.client.post(
+            reverse("compte:login"),
+            {
+                "username": "remember-owner",
+                "password": "RememberPass123",
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("core:dashboard_redirect"),
+            fetch_redirect_response=False,
+        )
+        self.assertTrue(self.client.session.get_expire_at_browser_close())
+
+    def test_login_with_remember_me_uses_persistent_session(self):
+        response = self.client.post(
+            reverse("compte:login"),
+            {
+                "username": "remember-owner",
+                "password": "RememberPass123",
+                "remember_me": "on",
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("core:dashboard_redirect"),
+            fetch_redirect_response=False,
+        )
+        self.assertFalse(self.client.session.get_expire_at_browser_close())
+
+    @override_settings(
+        SOCIAL_LINKS=[
+            {"label": "GitHub", "icon": "fab fa-github", "url": "https://github.com/rossy0243"},
+            {"label": "Facebook", "icon": "fab fa-facebook-f", "url": ""},
+        ]
+    )
+    def test_login_page_displays_configured_social_links(self):
+        response = self.client.get(reverse("compte:login"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse("compte:password_reset"))
+        self.assertContains(response, "https://github.com/rossy0243")
+        self.assertNotContains(response, 'aria-label="Facebook"')
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="noreply@example.com",
+)
+class PasswordResetFlowTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="reset-user",
+            password="AncienPass123",
+            email="reset@example.com",
+        )
+
+    def test_password_reset_request_sends_email(self):
+        response = self.client.post(
+            reverse("compte:password_reset"),
+            {"email": "reset@example.com"},
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("compte:password_reset_done"),
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["reset@example.com"])
+        self.assertIn("/compte/reset/", mail.outbox[0].body)
+
+    def test_password_reset_confirm_updates_password(self):
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+        token = default_token_generator.make_token(self.user)
+        confirm_url = reverse(
+            "compte:password_reset_confirm",
+            kwargs={"uidb64": uidb64, "token": token},
+        )
+
+        response = self.client.get(confirm_url, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            response.request["PATH_INFO"],
+            {
+                "new_password1": "NouveauPass123",
+                "new_password2": "NouveauPass123",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Mot de passe mis à jour")
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("NouveauPass123"))
 
 
 class UserProfileTests(TestCase):

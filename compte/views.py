@@ -1,4 +1,5 @@
 # compte/views.py
+from django.conf import settings
 from django.contrib.auth import logout, update_session_auth_hash
 from django.contrib.auth.views import LoginView
 from django.shortcuts import get_object_or_404, redirect, render
@@ -16,6 +17,19 @@ from organizations.models import Gym
 class CustomLoginView(LoginView):
     template_name = 'compte/login.html'
     authentication_form = CustomAuthenticationForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["social_links"] = [link for link in settings.SOCIAL_LINKS if link.get("url")]
+        return context
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        if form.cleaned_data.get("remember_me"):
+            self.request.session.set_expiry(settings.SESSION_COOKIE_AGE)
+        else:
+            self.request.session.set_expiry(0)
+        return response
 
     def get_success_url(self):
 
