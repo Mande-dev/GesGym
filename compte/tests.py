@@ -208,6 +208,16 @@ class SuperAdminOwnerCreationTests(TestCase):
         self.module_members, _ = Module.objects.get_or_create(code="MEMBERS", defaults={"name": "Membres"})
         self.module_pos, _ = Module.objects.get_or_create(code="POS", defaults={"name": "Point de vente"})
 
+    def test_superadmin_can_open_owner_creation_view(self):
+        self.client.force_login(self.superuser)
+
+        response = self.client.get(reverse("admin:create_owner_view"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Creer un Owner + organisation + gyms")
+        self.assertContains(response, "MEMBERS - Membres")
+        self.assertContains(response, "POS - Point de vente")
+
     def test_superadmin_can_create_owner_organization_gyms_and_modules(self):
         self.client.force_login(self.superuser)
 

@@ -104,8 +104,7 @@ class Module(models.Model):
         ordering = ["code"]
 
     def __str__(self):
-        organization = self.organization.name if self.organization_id else "Sans organisation"
-        return f"{organization} / {self.name}"
+        return f"{self.code} - {self.name}"
     
 class Gym(models.Model):
     """
