@@ -236,7 +236,7 @@ def member_app_manifest(request):
 
 def member_app_service_worker(request):
     content = """
-const CACHE_NAME = "smartclub-member-v3";
+const CACHE_NAME = "smartclub-member-v4";
 const STATIC_ASSETS = [
   "/static/css/member-portal.css",
   "/static/js/member-portal.js",

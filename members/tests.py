@@ -219,6 +219,8 @@ class MemberPortalTests(TestCase):
         self.assertContains(response, "Choisir un abonnement")
         self.assertContains(response, "Annuel")
         self.assertContains(response, reverse("members:member_portal_qr"))
+        self.assertNotContains(response, "Imprimer carte")
+        self.assertNotContains(response, "window.print")
 
     def test_member_can_create_pending_subscription_request_without_activating_plan(self):
         self.client.force_login(self.member.user)

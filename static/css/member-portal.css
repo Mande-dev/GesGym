@@ -272,9 +272,13 @@ a {
 
 .quick-actions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 10px;
     margin-top: 14px;
+}
+
+.quick-actions[hidden] {
+    display: none;
 }
 
 .action-button,
@@ -290,16 +294,6 @@ a {
     background: var(--accent-dark);
     color: #fff;
     font-weight: 900;
-}
-
-.action-button + .action-button,
-.action-button[hidden] + .action-button {
-    background: #eef2f7;
-    color: var(--ink);
-}
-
-#installAppBtn[hidden] + .action-button {
-    grid-column: 1 / -1;
 }
 
 .info-grid {
@@ -769,44 +763,5 @@ a {
 
     .mobile-dock a {
         font-size: 0.68rem;
-    }
-}
-
-@media print {
-    body {
-        background: #fff;
-    }
-
-    .member-topbar,
-    .quick-actions,
-    .info-grid,
-    .content-panel,
-    .mobile-dock,
-    .copy-toast {
-        display: none !important;
-    }
-
-    .member-app-shell {
-        width: 100%;
-        padding: 0;
-    }
-
-    .hero-panel {
-        border: 0;
-        box-shadow: none;
-        padding: 0;
-    }
-
-    .hero-panel::before,
-    .member-identity {
-        display: none;
-    }
-
-    .access-card {
-        width: 85mm;
-        min-height: 55mm;
-        color-adjust: exact;
-        print-color-adjust: exact;
-        -webkit-print-color-adjust: exact;
     }
 }

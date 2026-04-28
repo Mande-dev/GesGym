@@ -11,7 +11,7 @@
     <title>{{ gym.name }} | Espace membre</title>
     <link rel="manifest" href="{{ pwa_manifest_url }}">
     <link rel="apple-touch-icon" href="{% static 'icons/1.png' %}">
-    <link rel="stylesheet" href="{% static 'css/member-portal.css' %}?v=20260429">
+    <link rel="stylesheet" href="{% static 'css/member-portal.css' %}?v=20260429b">
 </head>
 <body data-service-worker-url="{{ pwa_service_worker_url }}">
     <main class="member-app-shell">
@@ -49,7 +49,7 @@
                 </div>
             </div>
 
-            <div class="access-card" id="printableCard">
+            <div class="access-card">
                 <div class="access-card-head">
                     <div>
                         <span>Carte membre</span>
@@ -72,12 +72,9 @@
                 </div>
             </div>
 
-            <div class="quick-actions">
+            <div class="quick-actions" id="memberQuickActions" hidden>
                 <button type="button" class="action-button" id="installAppBtn" hidden>
                     Installer
-                </button>
-                <button type="button" class="action-button" onclick="window.print()">
-                    Imprimer carte
                 </button>
             </div>
         </section>
@@ -284,6 +281,6 @@
     </nav>
 
     <div class="copy-toast" id="copyToast" role="status" aria-live="polite">Copie</div>
-    <script src="{% static 'js/member-portal.js' %}?v=20260429"></script>
+    <script src="{% static 'js/member-portal.js' %}?v=20260429b"></script>
 </body>
 </html>

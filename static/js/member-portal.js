@@ -1,6 +1,7 @@
 (function () {
     const body = document.body;
     const serviceWorkerUrl = body ? body.dataset.serviceWorkerUrl : "";
+    const quickActions = document.getElementById("memberQuickActions");
     const installButton = document.getElementById("installAppBtn");
     const toast = document.getElementById("copyToast");
     let deferredInstallPrompt = null;
@@ -26,6 +27,9 @@
         event.preventDefault();
         deferredInstallPrompt = event;
         if (installButton) {
+            if (quickActions) {
+                quickActions.hidden = false;
+            }
             installButton.hidden = false;
         }
     });
@@ -41,6 +45,9 @@
             await deferredInstallPrompt.userChoice.catch(function () {});
             deferredInstallPrompt = null;
             installButton.hidden = true;
+            if (quickActions) {
+                quickActions.hidden = true;
+            }
         });
     }
 
@@ -77,5 +84,8 @@
 
     if (window.matchMedia("(display-mode: standalone)").matches && installButton) {
         installButton.hidden = true;
+        if (quickActions) {
+            quickActions.hidden = true;
+        }
     }
 })();
