@@ -6,10 +6,11 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from coaching.models import Coach
 from compte.models import User, UserGymRole
 from members.models import Member, MemberPreRegistration, MemberPreRegistrationLink
 from organizations.models import Gym, Organization
-from subscriptions.models import MemberSubscription, SubscriptionPlan
+from subscriptions.models import MemberSubscription, SubscriptionPlan, SubscriptionRequest
 
 
 class MemberPreRegistrationTests(TestCase):
@@ -165,6 +166,12 @@ class MemberPortalTests(TestCase):
             duration_days=30,
             price=35,
         )
+        self.year_plan = SubscriptionPlan.objects.create(
+            gym=self.gym,
+            name="Annuel",
+            duration_days=365,
+            price=320,
+        )
         today = timezone.now().date()
         self.subscription = MemberSubscription.objects.create(
             gym=self.gym,
@@ -174,6 +181,13 @@ class MemberPortalTests(TestCase):
             end_date=today + timedelta(days=30),
             is_active=True,
         )
+        self.coach = Coach.objects.create(
+            gym=self.gym,
+            name="Coach Junior",
+            phone="+243990000101",
+            specialty="Musculation",
+        )
+        self.coach.members.add(self.member)
 
     def test_member_login_redirects_to_mobile_portal(self):
         response = self.client.post(
@@ -200,7 +214,34 @@ class MemberPortalTests(TestCase):
         self.assertContains(response, f"MEM-{self.member.id:05d}")
         self.assertContains(response, self.member.user.username)
         self.assertContains(response, "Mensuel")
+        self.assertContains(response, "Coach Junior")
+        self.assertContains(response, "Musculation")
+        self.assertContains(response, "Choisir un abonnement")
+        self.assertContains(response, "Annuel")
         self.assertContains(response, reverse("members:member_portal_qr"))
+
+    def test_member_can_create_pending_subscription_request_without_activating_plan(self):
+        self.client.force_login(self.member.user)
+
+        response = self.client.post(
+            reverse("members:member_subscription_request"),
+            {"plan_id": self.year_plan.id},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], f"{reverse('members:member_portal')}#plans")
+
+        request_obj = SubscriptionRequest.objects.get(member=self.member, plan=self.year_plan)
+        self.assertEqual(request_obj.gym, self.gym)
+        self.assertEqual(request_obj.status, SubscriptionRequest.STATUS_PENDING)
+        self.assertEqual(request_obj.price_usd, self.year_plan.price)
+        self.assertEqual(request_obj.requested_by, self.member.user)
+        self.subscription.refresh_from_db()
+        self.assertTrue(self.subscription.is_active)
+
+        response = self.client.get(reverse("members:member_portal"))
+        self.assertContains(response, "Demande en attente")
+        self.assertContains(response, "En attente")
 
     def test_member_portal_qr_is_limited_to_authenticated_member(self):
         anonymous_response = self.client.get(reverse("members:member_portal_qr"))

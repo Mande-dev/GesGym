@@ -12,13 +12,15 @@ from django.db.models import Q, Exists, OuterRef
 from django.core.paginator import Paginator
 from django.urls import reverse
 from django.templatetags.static import static
+from django.views.decorators.http import require_POST
 import qrcode
 from access.models import AccessLog
+from coaching.models import Coach
 from smartclub.access_control import MEMBER_ADMIN_ROLES, MEMBER_ROLES, has_role
 from .forms import MemberCreationForm
 from .models import Member, MemberPreRegistration, MemberPreRegistrationLink
 from pos.models import Payment
-from subscriptions.models import MemberSubscription, SubscriptionPlan
+from subscriptions.models import MemberSubscription, SubscriptionPlan, SubscriptionRequest
 
 
 #######   MEMBRE  ######
@@ -97,6 +99,24 @@ def member_portal(request):
         .select_related("scanned_by")
         .order_by("-check_in_time")[:8]
     )
+    coaches = Coach.objects.filter(
+        gym=member.gym,
+        members=member,
+        is_active=True,
+    ).order_by("name")
+    available_plans = SubscriptionPlan.objects.filter(
+        gym=member.gym,
+        is_active=True,
+    ).order_by("price", "duration_days", "name")
+    pending_requests = SubscriptionRequest.objects.filter(
+        gym=member.gym,
+        member=member,
+        status__in=[
+            SubscriptionRequest.STATUS_PENDING,
+            SubscriptionRequest.STATUS_AWAITING_PAYMENT,
+        ],
+    ).select_related("plan").order_by("-created_at")
+    pending_plan_ids = list(pending_requests.values_list("plan_id", flat=True))
     status = member.computed_status
 
     context = {
@@ -108,6 +128,10 @@ def member_portal(request):
         "subscription_progress": _subscription_progress(subscription),
         "payments": payments,
         "access_logs": access_logs,
+        "coaches": coaches,
+        "available_plans": available_plans,
+        "pending_requests": pending_requests,
+        "pending_plan_ids": pending_plan_ids,
         "status": status,
         "status_label": _status_label(status),
         "status_class": _status_class(status),
@@ -116,6 +140,56 @@ def member_portal(request):
         "pwa_service_worker_url": reverse("members:member_app_service_worker"),
     }
     return render(request, "members/member_portal.html", context)
+
+
+@login_required
+@require_POST
+def member_subscription_request(request):
+    current_member = _get_current_member(request.user)
+    if not current_member:
+        raise PermissionDenied
+
+    member = get_object_or_404(
+        Member.objects.select_related("gym"),
+        id=current_member.id,
+        user=request.user,
+    )
+    plan = get_object_or_404(
+        SubscriptionPlan,
+        id=request.POST.get("plan_id"),
+        gym=member.gym,
+        is_active=True,
+    )
+
+    SubscriptionRequest.objects.filter(
+        gym=member.gym,
+        member=member,
+        status=SubscriptionRequest.STATUS_PENDING,
+    ).exclude(plan=plan).update(
+        status=SubscriptionRequest.STATUS_CANCELLED,
+        notes="Remplacee par une nouvelle demande depuis l'espace membre.",
+    )
+
+    request_obj, created = SubscriptionRequest.objects.get_or_create(
+        gym=member.gym,
+        member=member,
+        plan=plan,
+        status=SubscriptionRequest.STATUS_PENDING,
+        defaults={
+            "requested_by": request.user,
+            "price_usd": plan.price,
+        },
+    )
+    if not created and request_obj.price_usd != plan.price:
+        request_obj.price_usd = plan.price
+        request_obj.requested_by = request.user
+        request_obj.save(update_fields=["price_usd", "requested_by", "updated_at"])
+
+    messages.success(
+        request,
+        "Demande de souscription enregistree. Le paiement sera finalise quand le module de paiement sera branche.",
+    )
+    return redirect(f"{reverse('members:member_portal')}#plans")
 
 
 @login_required
@@ -161,7 +235,7 @@ def member_app_manifest(request):
 
 def member_app_service_worker(request):
     content = """
-const CACHE_NAME = "smartclub-member-v1";
+const CACHE_NAME = "smartclub-member-v2";
 const STATIC_ASSETS = [
   "/static/css/member-portal.css",
   "/static/js/member-portal.js",

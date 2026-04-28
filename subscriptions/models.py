@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from members.models import Member
@@ -134,3 +135,98 @@ class MemberSubscription(models.Model):
     
     def __str__(self):
         return f"{self.member} - {self.plan}"
+
+
+class SubscriptionRequest(models.Model):
+    """
+    Intention de souscription creee depuis l'espace membre.
+    L'abonnement actif sera cree plus tard apres validation du paiement.
+    """
+
+    STATUS_PENDING = "pending"
+    STATUS_AWAITING_PAYMENT = "awaiting_payment"
+    STATUS_PAID = "paid"
+    STATUS_CANCELLED = "cancelled"
+    STATUS_FAILED = "failed"
+
+    STATUS_CHOICES = (
+        (STATUS_PENDING, "En attente"),
+        (STATUS_AWAITING_PAYMENT, "Paiement en cours"),
+        (STATUS_PAID, "Payee"),
+        (STATUS_CANCELLED, "Annulee"),
+        (STATUS_FAILED, "Echec"),
+    )
+
+    gym = models.ForeignKey(
+        Gym,
+        on_delete=models.CASCADE,
+        related_name="subscription_requests",
+        db_index=True,
+    )
+
+    member = models.ForeignKey(
+        Member,
+        on_delete=models.CASCADE,
+        related_name="subscription_requests",
+    )
+
+    plan = models.ForeignKey(
+        SubscriptionPlan,
+        on_delete=models.PROTECT,
+        related_name="subscription_requests",
+    )
+
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="subscription_requests",
+    )
+
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING,
+        db_index=True,
+    )
+
+    price_usd = models.DecimalField(max_digits=10, decimal_places=2)
+
+    aggregator_reference = models.CharField(max_length=160, blank=True)
+
+    notes = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["gym", "member", "status"]),
+            models.Index(fields=["gym", "created_at"]),
+            models.Index(fields=["status", "created_at"]),
+        ]
+        ordering = ["-created_at"]
+
+    def clean(self):
+        super().clean()
+        if self.member_id and not self.gym_id:
+            self.gym = self.member.gym
+        if self.member_id and self.gym_id and self.member.gym_id != self.gym_id:
+            raise ValidationError("Le membre n'appartient pas au gym de la demande.")
+        if self.plan_id and self.gym_id and self.plan.gym_id != self.gym_id:
+            raise ValidationError("La formule n'appartient pas au gym de la demande.")
+        if self.price_usd is not None and self.price_usd < 0:
+            raise ValidationError({"price_usd": "Le prix ne peut pas etre negatif."})
+
+    def save(self, *args, **kwargs):
+        if self.member_id and not self.gym_id:
+            self.gym = self.member.gym
+        if self.plan_id and self.price_usd is None:
+            self.price_usd = self.plan.price
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.member} - {self.plan} - {self.get_status_display()}"

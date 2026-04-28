@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import MemberSubscription, SubscriptionPlan
+from .models import MemberSubscription, SubscriptionPlan, SubscriptionRequest
 
 
 @admin.register(SubscriptionPlan)
@@ -44,6 +44,39 @@ class MemberSubscriptionAdmin(admin.ModelAdmin):
     autocomplete_fields = ("gym", "member", "plan")
     date_hierarchy = "start_date"
     ordering = ("-start_date", "gym__organization__name", "gym__name")
+
+    def organization(self, obj):
+        return obj.gym.organization.name if obj.gym_id else "-"
+
+    organization.short_description = "Organisation"
+    organization.admin_order_field = "gym__organization__name"
+
+
+@admin.register(SubscriptionRequest)
+class SubscriptionRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        "member",
+        "organization",
+        "gym",
+        "plan",
+        "status",
+        "price_usd",
+        "aggregator_reference",
+        "created_at",
+    )
+    list_filter = ("status", "gym__organization", "gym", "plan")
+    search_fields = (
+        "member__first_name",
+        "member__last_name",
+        "member__phone",
+        "plan__name",
+        "aggregator_reference",
+        "gym__name",
+        "gym__organization__name",
+    )
+    autocomplete_fields = ("gym", "member", "plan", "requested_by")
+    readonly_fields = ("created_at", "updated_at")
+    ordering = ("-created_at",)
 
     def organization(self, obj):
         return obj.gym.organization.name if obj.gym_id else "-"

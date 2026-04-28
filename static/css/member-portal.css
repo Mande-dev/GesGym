@@ -42,6 +42,29 @@ a {
     padding: max(18px, env(safe-area-inset-top)) 16px calc(92px + env(safe-area-inset-bottom));
 }
 
+.message-stack {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.message-card {
+    border: 1px solid rgba(21, 128, 61, 0.18);
+    border-radius: 16px;
+    background: rgba(21, 128, 61, 0.08);
+    color: var(--ok);
+    padding: 12px 14px;
+    font-size: 0.92rem;
+    font-weight: 800;
+    line-height: 1.45;
+}
+
+.message-card.error {
+    border-color: rgba(180, 35, 24, 0.2);
+    background: rgba(180, 35, 24, 0.08);
+    color: var(--danger);
+}
+
 .member-topbar {
     display: flex;
     align-items: center;
@@ -389,13 +412,17 @@ a {
 }
 
 .timeline-list,
-.payment-list {
+.payment-list,
+.coach-list,
+.plan-list {
     display: grid;
     gap: 12px;
 }
 
 .timeline-item,
-.payment-row {
+.payment-row,
+.coach-card,
+.plan-card {
     display: flex;
     align-items: flex-start;
     gap: 12px;
@@ -406,13 +433,18 @@ a {
 }
 
 .timeline-item strong,
-.payment-row strong {
+.payment-row strong,
+.coach-card strong,
+.plan-card strong {
     display: block;
     font-size: 0.96rem;
 }
 
 .timeline-item small,
-.payment-row small {
+.payment-row small,
+.coach-card small,
+.plan-card small,
+.pending-box small {
     display: block;
     margin-top: 3px;
     color: var(--muted);
@@ -436,6 +468,73 @@ a {
     justify-content: space-between;
 }
 
+.coach-card {
+    align-items: center;
+}
+
+.coach-avatar {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: var(--accent-dark);
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.pending-box {
+    border: 1px solid rgba(255, 140, 0, 0.24);
+    border-radius: 16px;
+    background: rgba(255, 140, 0, 0.09);
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.pending-box strong {
+    display: block;
+    color: var(--warn);
+    font-size: 0.95rem;
+}
+
+.plan-card {
+    align-items: center;
+    justify-content: space-between;
+}
+
+.plan-action {
+    display: grid;
+    justify-items: end;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.plan-action span {
+    color: var(--ink);
+    font-weight: 900;
+}
+
+.plan-action form {
+    margin: 0;
+}
+
+.plan-action .action-button {
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+}
+
+.plan-action .action-button.muted,
+.plan-action .action-button:disabled {
+    background: #edf1ed;
+    color: var(--muted);
+    cursor: not-allowed;
+}
+
 .payment-row span {
     flex: 0 0 auto;
     font-weight: 900;
@@ -455,7 +554,7 @@ a {
     width: min(calc(100% - 24px), 520px);
     transform: translateX(-50%);
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 6px;
     padding: 7px;
     border: 1px solid rgba(219, 227, 221, 0.92);
@@ -529,6 +628,24 @@ a {
 
     .detail-list {
         grid-template-columns: 1fr;
+    }
+
+    .plan-card {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .plan-action {
+        justify-items: stretch;
+        width: 100%;
+    }
+
+    .plan-action .action-button {
+        width: 100%;
+    }
+
+    .mobile-dock a {
+        font-size: 0.68rem;
     }
 }
 

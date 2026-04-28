@@ -15,6 +15,14 @@
 </head>
 <body data-service-worker-url="{{ pwa_service_worker_url }}">
     <main class="member-app-shell">
+        {% if messages %}
+            <div class="message-stack">
+                {% for message in messages %}
+                    <div class="message-card {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
         <header class="member-topbar">
             <div>
                 <p class="eyebrow">{{ organization.name }}</p>
@@ -90,6 +98,31 @@
             </article>
         </section>
 
+        <section class="content-panel" id="coach">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Coaching</p>
+                    <h2>Mon accompagnement</h2>
+                </div>
+            </div>
+
+            {% if coaches %}
+                <div class="coach-list">
+                    {% for coach in coaches %}
+                        <article class="coach-card">
+                            <div class="coach-avatar">{{ coach.name|slice:":1" }}</div>
+                            <div>
+                                <strong>{{ coach.name }}</strong>
+                                <small>{{ coach.specialty|default:"Coach" }}{% if coach.phone %} - {{ coach.phone }}{% endif %}</small>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-state">Aucun coach n'est encore rattache a votre compte.</p>
+            {% endif %}
+        </section>
+
         <section class="content-panel" id="subscription">
             <div class="section-heading">
                 <div>
@@ -130,6 +163,49 @@
             {% else %}
                 <p class="empty-state">Aucun abonnement actif n'est rattache a ce compte.</p>
             {% endif %}
+        </section>
+
+        <section class="content-panel" id="plans">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Formules</p>
+                    <h2>Choisir un abonnement</h2>
+                </div>
+            </div>
+
+            {% if pending_requests %}
+                <div class="pending-box">
+                    <strong>Demande en attente</strong>
+                    {% for request_item in pending_requests %}
+                        <small>{{ request_item.plan.name }} - {{ request_item.price_usd|floatformat:2 }} USD</small>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="plan-list">
+                {% for plan in available_plans %}
+                    <article class="plan-card">
+                        <div>
+                            <strong>{{ plan.name }}</strong>
+                            <small>{{ plan.duration_days }} jours{% if plan.description %} - {{ plan.description }}{% endif %}</small>
+                        </div>
+                        <div class="plan-action">
+                            <span>{{ plan.price|floatformat:2 }} USD</span>
+                            {% if plan.id in pending_plan_ids %}
+                                <button type="button" class="action-button muted" disabled>En attente</button>
+                            {% else %}
+                                <form method="post" action="{% url 'members:member_subscription_request' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="plan_id" value="{{ plan.id }}">
+                                    <button type="submit" class="action-button">Souscrire</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% empty %}
+                    <p class="empty-state">Aucune formule active n'est disponible pour le moment.</p>
+                {% endfor %}
+            </div>
         </section>
 
         <section class="content-panel" id="history">
@@ -182,7 +258,8 @@
     <nav class="mobile-dock" aria-label="Navigation membre">
         <a href="#card">Carte</a>
         <a href="#identity">Identite</a>
-        <a href="#subscription">Abonnement</a>
+        <a href="#coach">Coach</a>
+        <a href="#plans">Formules</a>
         <a href="#history">Acces</a>
     </nav>
 
