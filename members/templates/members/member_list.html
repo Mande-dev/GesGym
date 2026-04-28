@@ -682,6 +682,17 @@
                                 Username : <strong id="viewMemberUsername">-</strong>
                             </p>
 
+                            <div class="input-group input-group-sm mb-2" style="max-width: 360px;">
+                                <span class="input-group-text">
+                                    <span class="material-icons" style="font-size:14px;">smartphone</span>
+                                </span>
+                                <input type="text" id="viewMemberPortalUrl" class="form-control" readonly
+                                    aria-label="Lien espace membre">
+                                <button class="btn btn-light" type="button" onclick="copyMemberPortalUrl()">
+                                    Copier
+                                </button>
+                            </div>
+
                             <p class="mb-1">
                                 <span class="material-icons" style="font-size:14px;">phone</span>
                                 <span id="viewMemberPhone">-</span>
@@ -971,6 +982,10 @@
 
                 // === USERNAME ===
                 document.getElementById("viewMemberUsername").innerText = data.username || "Non défini";
+                const memberPortalUrl = document.getElementById("viewMemberPortalUrl");
+                if (memberPortalUrl) {
+                    memberPortalUrl.value = data.member_portal_url || "";
+                }
 
                 // === INFORMATIONS DE BASE ===
                 // === ID DU MEMBRE (IMPORTANT POUR LA SUSPENSION) ===
@@ -1093,6 +1108,14 @@
         link.download = `qr_${document.getElementById("viewMemberName").innerText.replace(/\s+/g, '_')}.png`;
         link.href = canvas.toDataURL("image/png");
         link.click();
+    }
+
+    function copyMemberPortalUrl() {
+        const input = document.getElementById("viewMemberPortalUrl");
+        if (!input || !input.value) return;
+        input.select();
+        input.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(input.value).catch(() => document.execCommand("copy"));
     }
 
 

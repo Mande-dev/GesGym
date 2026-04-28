@@ -11,6 +11,7 @@ from django.shortcuts import redirect
 from django.db.models import Q, Exists, OuterRef
 from django.core.paginator import Paginator
 from django.urls import reverse
+from django.templatetags.static import static
 import qrcode
 from access.models import AccessLog
 from smartclub.access_control import MEMBER_ADMIN_ROLES, MEMBER_ROLES, has_role
@@ -35,6 +36,171 @@ def _get_pre_registration_public_url(request, link):
     return request.build_absolute_uri(
         reverse("members:public_pre_registration", args=[link.token])
     )
+
+
+def _get_current_member(user):
+    return getattr(user, "member_profile", None)
+
+
+def _member_code(member):
+    return f"MEM-{member.id:05d}"
+
+
+def _subscription_progress(subscription):
+    if not subscription:
+        return 0
+
+    total_days = max((subscription.end_date - subscription.start_date).days, 1)
+    elapsed_days = (timezone.localdate() - subscription.start_date).days
+    progress = round((elapsed_days / total_days) * 100)
+    return min(max(progress, 0), 100)
+
+
+def _status_label(status):
+    return {
+        "active": "Actif",
+        "expired": "Expire",
+        "suspended": "Suspendu",
+    }.get(status, "Inconnu")
+
+
+def _status_class(status):
+    return {
+        "active": "is-active",
+        "expired": "is-expired",
+        "suspended": "is-suspended",
+    }.get(status, "is-unknown")
+
+
+@login_required
+def member_portal(request):
+    """
+    Espace mobile du membre connecte: carte, QR code, abonnement et historique.
+    """
+    current_member = _get_current_member(request.user)
+    if not current_member:
+        raise PermissionDenied
+
+    member = get_object_or_404(
+        Member.objects.select_related("user", "gym", "gym__organization"),
+        id=current_member.id,
+        user=request.user,
+    )
+    subscription = member.active_subscription
+    payments = (
+        Payment.objects.filter(member=member, gym=member.gym)
+        .select_related("subscription", "subscription__plan", "product")
+        .order_by("-created_at")[:6]
+    )
+    access_logs = (
+        AccessLog.objects.filter(member=member, gym=member.gym)
+        .select_related("scanned_by")
+        .order_by("-check_in_time")[:8]
+    )
+    status = member.computed_status
+
+    context = {
+        "member": member,
+        "member_code": _member_code(member),
+        "organization": member.gym.organization,
+        "gym": member.gym,
+        "subscription": subscription,
+        "subscription_progress": _subscription_progress(subscription),
+        "payments": payments,
+        "access_logs": access_logs,
+        "status": status,
+        "status_label": _status_label(status),
+        "status_class": _status_class(status),
+        "days_remaining": member.days_remaining,
+        "pwa_manifest_url": reverse("members:member_app_manifest"),
+        "pwa_service_worker_url": reverse("members:member_app_service_worker"),
+    }
+    return render(request, "members/member_portal.html", context)
+
+
+@login_required
+def member_portal_qr(request):
+    current_member = _get_current_member(request.user)
+    if not current_member:
+        raise PermissionDenied
+
+    qr = qrcode.make(current_member.get_qr_data())
+    buffer = BytesIO()
+    qr.save(buffer)
+
+    return HttpResponse(buffer.getvalue(), content_type="image/png")
+
+
+def member_app_manifest(request):
+    manifest = {
+        "name": "SmartClub Membre",
+        "short_name": "SmartClub",
+        "description": "Carte membre, abonnement et acces SmartClub.",
+        "start_url": reverse("members:member_portal"),
+        "scope": "/members/",
+        "display": "standalone",
+        "background_color": "#f6f7f2",
+        "theme_color": "#102820",
+        "orientation": "portrait",
+        "icons": [
+            {
+                "src": static("icons/1.png"),
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any maskable",
+            },
+            {
+                "src": static("avatar/logo_smartclub.png"),
+                "sizes": "1536x1024",
+                "type": "image/png",
+            },
+        ],
+    }
+    return JsonResponse(manifest)
+
+
+def member_app_service_worker(request):
+    content = """
+const CACHE_NAME = "smartclub-member-v1";
+const STATIC_ASSETS = [
+  "/static/css/member-portal.css",
+  "/static/js/member-portal.js",
+  "/static/icons/1.png",
+  "/static/avatar/logo_smartclub.png"
+];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)).catch(() => null)
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(
+      keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+    ))
+  );
+  self.clients.claim();
+});
+
+self.addEventListener("fetch", (event) => {
+  const request = event.request;
+
+  if (request.mode === "navigate") {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  event.respondWith(
+    caches.match(request).then((cached) => cached || fetch(request))
+  );
+});
+"""
+    response = HttpResponse(content, content_type="application/javascript")
+    response["Service-Worker-Allowed"] = "/members/"
+    return response
 
 #######   liste  ######
 @login_required
@@ -228,7 +394,8 @@ def create_member(request):
                         <span class="opacity-90">
                             {member.first_name} {member.last_name}<br>
                             Identifiant : <strong>{member.user.username}</strong><br>
-                            Mot de passe temporaire : <strong>12345</strong>
+                            Mot de passe temporaire : <strong>12345</strong><br>
+                            Espace membre : <strong>{reverse("members:member_portal")}</strong>
                         </span>
                     </div>
                 </div>
@@ -364,6 +531,8 @@ def member_detail(request, member_id):
         "email": member.email,
         "status": member.computed_status,
         "qr_code": str(member.qr_code),
+        "member_code": _member_code(member),
+        "member_portal_url": request.build_absolute_uri(reverse("members:member_portal")),
         # abonnement
         "subscription_type": member.subscription_type,
         "start_date": subscription.start_date.strftime("%d/%m/%Y") if subscription else None,

@@ -43,6 +43,18 @@ class CustomLoginView(LoginView):
         if user.owned_organization and user.owned_organization.is_active:
             return reverse_lazy("core:dashboard_redirect")
 
+        # Membre final : espace mobile dedie, sans passer par l'interface staff.
+        member_profile = getattr(user, "member_profile", None)
+        if member_profile:
+            has_staff_role = UserGymRole.objects.filter(
+                user=user,
+                is_active=True,
+                gym__is_active=True,
+                gym__organization__is_active=True,
+            ).exclude(role="accountant").exists()
+            if not has_staff_role:
+                return reverse_lazy("members:member_portal")
+
         # Employe interne : il doit avoir un role actif dans une salle active.
         role = UserGymRole.objects.filter(
             user=user,

@@ -9,6 +9,7 @@ from django.utils import timezone
 from compte.models import User, UserGymRole
 from members.models import Member, MemberPreRegistration, MemberPreRegistrationLink
 from organizations.models import Gym, Organization
+from subscriptions.models import MemberSubscription, SubscriptionPlan
 
 
 class MemberPreRegistrationTests(TestCase):
@@ -140,3 +141,86 @@ class MemberPreRegistrationTests(TestCase):
         self.assertFalse(MemberPreRegistration.objects.filter(id=expired.id).exists())
         self.assertTrue(MemberPreRegistration.objects.filter(id=confirmed.id).exists())
         self.assertIn("1 preinscription", output.getvalue())
+
+
+class MemberPortalTests(TestCase):
+    def setUp(self):
+        self.organization = Organization.objects.create(name="Portal Org", slug="portal-org")
+        self.gym = Gym.objects.create(
+            organization=self.organization,
+            name="Portal Gym",
+            slug="portal-gym",
+            subdomain="portal-gym",
+        )
+        self.member = Member.objects.create(
+            gym=self.gym,
+            first_name="Maya",
+            last_name="Mobile",
+            phone="+243810000101",
+            email="maya.mobile@example.com",
+        )
+        self.plan = SubscriptionPlan.objects.create(
+            gym=self.gym,
+            name="Mensuel",
+            duration_days=30,
+            price=35,
+        )
+        today = timezone.now().date()
+        self.subscription = MemberSubscription.objects.create(
+            gym=self.gym,
+            member=self.member,
+            plan=self.plan,
+            start_date=today,
+            end_date=today + timedelta(days=30),
+            is_active=True,
+        )
+
+    def test_member_login_redirects_to_mobile_portal(self):
+        response = self.client.post(
+            reverse("compte:login"),
+            {
+                "username": self.member.user.username,
+                "password": "12345",
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("members:member_portal"),
+            fetch_redirect_response=False,
+        )
+
+    def test_member_portal_shows_identity_card_and_subscription(self):
+        self.client.force_login(self.member.user)
+
+        response = self.client.get(reverse("members:member_portal"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Carte membre")
+        self.assertContains(response, f"MEM-{self.member.id:05d}")
+        self.assertContains(response, self.member.user.username)
+        self.assertContains(response, "Mensuel")
+        self.assertContains(response, reverse("members:member_portal_qr"))
+
+    def test_member_portal_qr_is_limited_to_authenticated_member(self):
+        anonymous_response = self.client.get(reverse("members:member_portal_qr"))
+        self.assertEqual(anonymous_response.status_code, 302)
+
+        self.client.force_login(self.member.user)
+        response = self.client.get(reverse("members:member_portal_qr"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "image/png")
+        self.assertTrue(response.content.startswith(b"\x89PNG"))
+
+    def test_pwa_manifest_and_service_worker_are_available(self):
+        manifest_response = self.client.get(reverse("members:member_app_manifest"))
+        worker_response = self.client.get(reverse("members:member_app_service_worker"))
+
+        self.assertEqual(manifest_response.status_code, 200)
+        self.assertEqual(manifest_response.json()["start_url"], reverse("members:member_portal"))
+        self.assertEqual(manifest_response.json()["display"], "standalone")
+        self.assertEqual(worker_response.status_code, 200)
+        self.assertEqual(worker_response["Service-Worker-Allowed"], "/members/")
+        self.assertIn("service-worker", reverse("members:member_app_service_worker"))
+        self.assertNotIn("/members/me/", worker_response.content.decode("utf-8"))

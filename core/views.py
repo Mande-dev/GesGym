@@ -298,11 +298,26 @@ def _build_member_growth_rows(members_qs, period_data):
     return rows
 
 
+def _should_use_member_portal(user):
+    if not getattr(user, "is_authenticated", False):
+        return False
+    if user.is_saas_admin or user.owned_organization_id:
+        return False
+    try:
+        user.member_profile
+    except AttributeError:
+        return False
+    return not UserGymRole.objects.filter(user=user, is_active=True).exclude(role="accountant").exists()
+
+
 @login_required
 def dashboard_redirect(request):
     """Redirige vers le bon dashboard apres connexion."""
     if not request.user.is_authenticated:
         return redirect('login')
+
+    if _should_use_member_portal(request.user):
+        return redirect("members:member_portal")
 
     if getattr(request, 'is_owner', False):
         owned_gyms = list(getattr(request, 'owned_gyms', []))

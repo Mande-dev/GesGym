@@ -1,0 +1,192 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#102820">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="SmartClub">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>{{ gym.name }} | Espace membre</title>
+    <link rel="manifest" href="{{ pwa_manifest_url }}">
+    <link rel="apple-touch-icon" href="{% static 'icons/1.png' %}">
+    <link rel="stylesheet" href="{% static 'css/member-portal.css' %}?v=20260428">
+</head>
+<body data-service-worker-url="{{ pwa_service_worker_url }}">
+    <main class="member-app-shell">
+        <header class="member-topbar">
+            <div>
+                <p class="eyebrow">{{ organization.name }}</p>
+                <h1>{{ gym.name }}</h1>
+            </div>
+            <a class="icon-button" href="{% url 'compte:logout' %}" aria-label="Deconnexion" title="Deconnexion">
+                <span aria-hidden="true">&gt;</span>
+            </a>
+        </header>
+
+        <section class="hero-panel {{ status_class }}" id="card">
+            <div class="member-identity">
+                <div class="avatar">
+                    {% if member.photo %}
+                        <img src="{{ member.photo.url }}" alt="{{ member.first_name }} {{ member.last_name }}">
+                    {% else %}
+                        <span>{{ member.first_name|slice:":1" }}{{ member.last_name|slice:":1" }}</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <span class="status-pill">{{ status_label }}</span>
+                    <h2>{{ member.first_name }} {{ member.last_name }}</h2>
+                    <p>{{ member_code }}</p>
+                </div>
+            </div>
+
+            <div class="access-card" id="printableCard">
+                <div class="access-card-head">
+                    <div>
+                        <span>Carte membre</span>
+                        <strong>{{ gym.name }}</strong>
+                    </div>
+                    {% if organization.logo %}
+                        <img src="{{ organization.logo.url }}" alt="{{ organization.name }}">
+                    {% else %}
+                        <img src="{% static 'avatar/logo_smartclub.png' %}" alt="SmartClub">
+                    {% endif %}
+                </div>
+
+                <div class="qr-zone">
+                    <img src="{% url 'members:member_portal_qr' %}" alt="QR code membre">
+                    <div>
+                        <p>Code d'acces</p>
+                        <strong>{{ member_code }}</strong>
+                        <small>Presentez ce QR code a l'accueil.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <button type="button" class="action-button" id="installAppBtn" hidden>
+                    Installer
+                </button>
+                <button type="button" class="action-button" onclick="window.print()">
+                    Imprimer carte
+                </button>
+            </div>
+        </section>
+
+        <section class="info-grid" id="identity">
+            <article class="info-block">
+                <span>Identifiant</span>
+                <strong>{{ member.user.username }}</strong>
+                <button type="button" class="text-button" data-copy="{{ member.user.username }}">Copier</button>
+            </article>
+            <article class="info-block">
+                <span>Telephone</span>
+                <strong>{{ member.phone|default:"-" }}</strong>
+            </article>
+            <article class="info-block wide">
+                <span>Email</span>
+                <strong>{{ member.email|default:"-" }}</strong>
+            </article>
+        </section>
+
+        <section class="content-panel" id="subscription">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Abonnement</p>
+                    <h2>{{ member.subscription_type }}</h2>
+                </div>
+                {% if days_remaining != None %}
+                    {% if days_remaining >= 0 %}
+                        <span class="metric">{{ days_remaining }} j</span>
+                    {% else %}
+                        <span class="metric danger">Expire</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            {% if subscription %}
+                <div class="progress-track" aria-label="Progression de l'abonnement">
+                    <span style="width: {{ subscription_progress }}%;"></span>
+                </div>
+                <dl class="detail-list">
+                    <div>
+                        <dt>Debut</dt>
+                        <dd>{{ subscription.start_date|date:"d/m/Y" }}</dd>
+                    </div>
+                    <div>
+                        <dt>Expiration</dt>
+                        <dd>{{ subscription.end_date|date:"d/m/Y" }}</dd>
+                    </div>
+                    <div>
+                        <dt>Formule</dt>
+                        <dd>{{ subscription.plan.name|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt>Prix</dt>
+                        <dd>{{ subscription.plan.price|floatformat:2 }} USD</dd>
+                    </div>
+                </dl>
+            {% else %}
+                <p class="empty-state">Aucun abonnement actif n'est rattache a ce compte.</p>
+            {% endif %}
+        </section>
+
+        <section class="content-panel" id="history">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Activite</p>
+                    <h2>Derniers acces</h2>
+                </div>
+            </div>
+
+            <div class="timeline-list">
+                {% for log in access_logs %}
+                    <div class="timeline-item">
+                        <span class="dot {% if log.access_granted %}ok{% else %}ko{% endif %}"></span>
+                        <div>
+                            <strong>{% if log.access_granted %}Acces autorise{% else %}Acces refuse{% endif %}</strong>
+                            <small>{{ log.check_in_time|date:"d/m/Y H:i" }}{% if log.denial_reason %} - {{ log.denial_reason }}{% endif %}</small>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="empty-state">Aucun acces enregistre pour le moment.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="content-panel">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Paiements</p>
+                    <h2>Dernieres operations</h2>
+                </div>
+            </div>
+
+            <div class="payment-list">
+                {% for payment in payments %}
+                    <div class="payment-row">
+                        <div>
+                            <strong>{{ payment.description|default:"Paiement" }}</strong>
+                            <small>{{ payment.created_at|date:"d/m/Y H:i" }} - {{ payment.get_method_display }}</small>
+                        </div>
+                        <span>{{ payment.amount_cdf|floatformat:0 }} CDF</span>
+                    </div>
+                {% empty %}
+                    <p class="empty-state">Aucun paiement recent.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+
+    <nav class="mobile-dock" aria-label="Navigation membre">
+        <a href="#card">Carte</a>
+        <a href="#identity">Identite</a>
+        <a href="#subscription">Abonnement</a>
+        <a href="#history">Acces</a>
+    </nav>
+
+    <div class="copy-toast" id="copyToast" role="status" aria-live="polite">Copie</div>
+    <script src="{% static 'js/member-portal.js' %}?v=20260428"></script>
+</body>
+</html>
