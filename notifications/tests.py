@@ -68,7 +68,12 @@ class InAppNotificationDashboardTests(TestCase):
             username="reception-notify",
             password="pass12345",
         )
+        self.manager = User.objects.create_user(
+            username="manager-notify",
+            password="pass12345",
+        )
         UserGymRole.objects.create(user=self.reception, gym=self.gym, role="reception")
+        UserGymRole.objects.create(user=self.manager, gym=self.gym, role="manager")
 
     def test_dashboard_sends_in_app_message(self):
         self.client.force_login(self.owner)
@@ -134,11 +139,18 @@ class InAppNotificationDashboardTests(TestCase):
             ["Maya"],
         )
 
-    def test_reception_can_open_dashboard_when_module_is_active(self):
-        self.client.force_login(self.reception)
+    def test_manager_can_open_dashboard_when_module_is_active(self):
+        self.client.force_login(self.manager)
 
         response = self.client.get(reverse("notifications:dashboard"))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Messages membres")
         self.assertContains(response, "Maya Message")
+
+    def test_reception_cannot_open_dashboard(self):
+        self.client.force_login(self.reception)
+
+        response = self.client.get(reverse("notifications:dashboard"))
+
+        self.assertEqual(response.status_code, 403)
