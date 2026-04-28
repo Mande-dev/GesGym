@@ -11,7 +11,7 @@
     <title>{{ gym.name }} | Espace membre</title>
     <link rel="manifest" href="{{ pwa_manifest_url }}">
     <link rel="apple-touch-icon" href="{% static 'icons/1.png' %}">
-    <link rel="stylesheet" href="{% static 'css/member-portal.css' %}?v=20260428">
+    <link rel="stylesheet" href="{% static 'css/member-portal.css' %}?v=20260429">
 </head>
 <body data-service-worker-url="{{ pwa_service_worker_url }}">
     <main class="member-app-shell">
@@ -166,10 +166,11 @@
         </section>
 
         <section class="content-panel" id="plans">
-            <div class="section-heading">
+            <div class="section-heading plan-heading">
                 <div>
                     <p class="eyebrow">Formules</p>
                     <h2>Choisir un abonnement</h2>
+                    <small>Selectionnez une formule. Le paiement sera finalise via le module en ligne.</small>
                 </div>
             </div>
 
@@ -184,14 +185,33 @@
 
             <div class="plan-list">
                 {% for plan in available_plans %}
-                    <article class="plan-card">
-                        <div>
-                            <strong>{{ plan.name }}</strong>
-                            <small>{{ plan.duration_days }} jours{% if plan.description %} - {{ plan.description }}{% endif %}</small>
+                    <article class="plan-card {% if plan.id == current_plan_id %}is-current{% elif forloop.first %}is-featured{% endif %}">
+                        <div class="plan-main">
+                            <div class="plan-title-row">
+                                <strong>{{ plan.name }}</strong>
+                                {% if plan.id == current_plan_id %}
+                                    <span class="plan-badge current">Actuel</span>
+                                {% elif forloop.first %}
+                                    <span class="plan-badge">Populaire</span>
+                                {% endif %}
+                            </div>
+                            <div class="plan-price">
+                                <span>{{ plan.price|floatformat:2 }}</span>
+                                <small>USD</small>
+                            </div>
+                            {% if plan.description %}
+                                <p>{{ plan.description }}</p>
+                            {% endif %}
+                            <ul class="plan-benefits" aria-label="Avantages de la formule">
+                                <li>{{ plan.duration_days }} jours d'acces</li>
+                                <li>Carte membre et QR code inclus</li>
+                                <li>Suivi dans l'espace membre</li>
+                            </ul>
                         </div>
                         <div class="plan-action">
-                            <span>{{ plan.price|floatformat:2 }} USD</span>
-                            {% if plan.id in pending_plan_ids %}
+                            {% if plan.id == current_plan_id %}
+                                <button type="button" class="action-button muted" disabled>Formule active</button>
+                            {% elif plan.id in pending_plan_ids %}
                                 <button type="button" class="action-button muted" disabled>En attente</button>
                             {% else %}
                                 <form method="post" action="{% url 'members:member_subscription_request' %}">
@@ -264,6 +284,6 @@
     </nav>
 
     <div class="copy-toast" id="copyToast" role="status" aria-live="polite">Copie</div>
-    <script src="{% static 'js/member-portal.js' %}?v=20260428"></script>
+    <script src="{% static 'js/member-portal.js' %}?v=20260429"></script>
 </body>
 </html>

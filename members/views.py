@@ -132,6 +132,7 @@ def member_portal(request):
         "available_plans": available_plans,
         "pending_requests": pending_requests,
         "pending_plan_ids": pending_plan_ids,
+        "current_plan_id": subscription.plan_id if subscription and subscription.plan_id else None,
         "status": status,
         "status_label": _status_label(status),
         "status_class": _status_class(status),
@@ -235,7 +236,7 @@ def member_app_manifest(request):
 
 def member_app_service_worker(request):
     content = """
-const CACHE_NAME = "smartclub-member-v2";
+const CACHE_NAME = "smartclub-member-v3";
 const STATIC_ASSETS = [
   "/static/css/member-portal.css",
   "/static/js/member-portal.js",
