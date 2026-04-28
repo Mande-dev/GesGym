@@ -9,6 +9,8 @@ class PublicRouteTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "SmartClub")
+        self.assertContains(response, "Espace membre PWA")
+        self.assertContains(response, "Messages membres")
         self.assertContains(response, reverse("compte:login"))
         self.assertNotContains(response, "{% url 'compte:login' %}")
 
@@ -33,4 +35,4 @@ class PublicRouteTests(TestCase):
     def test_landing_uses_versioned_script_to_avoid_stale_browser_cache(self):
         response = self.client.get("/")
 
-        self.assertContains(response, "script_accueil.js?v=landing-premium-v2-faq")
+        self.assertContains(response, "script_accueil.js?v=landing-v1-member-messaging")

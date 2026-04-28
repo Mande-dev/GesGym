@@ -196,6 +196,7 @@
 
       <nav class="hidden md:flex gap-8 text-sm font-semibold text-gray-700">
         <a href="#accueil" class="hover:text-[#FF8C00] transition">Accueil</a>
+        <a href="#v1" class="hover:text-[#FF8C00] transition">V1 actuelle</a>
         <a href="#solution" class="hover:text-[#FF8C00] transition">Solution</a>
         <a href="#modules" class="hover:text-[#FF8C00] transition">Modules</a>
         <a href="#formules" class="hover:text-[#FF8C00] transition">Formules</a>
@@ -220,6 +221,7 @@
     <div id="mobile-menu" class="mobile-menu md:hidden bg-white border-t border-gray-100 px-6">
       <nav class="flex flex-col py-4 space-y-3 text-sm font-semibold text-gray-700">
         <a href="#accueil" class="hover:text-[#FF8C00] transition">Accueil</a>
+        <a href="#v1" class="hover:text-[#FF8C00] transition">V1 actuelle</a>
         <a href="#solution" class="hover:text-[#FF8C00] transition">Solution</a>
         <a href="#modules" class="hover:text-[#FF8C00] transition">Modules</a>
         <a href="#formules" class="hover:text-[#FF8C00] transition">Formules</a>
@@ -256,6 +258,8 @@
 
           <div class="flex flex-wrap gap-3 justify-center lg:justify-start mb-8">
             <span class="metric-chip px-4 py-2 rounded-full text-sm font-semibold text-gray-700">2 formules claires</span>
+            <span class="metric-chip px-4 py-2 rounded-full text-sm font-semibold text-gray-700">Espace membre PWA</span>
+            <span class="metric-chip px-4 py-2 rounded-full text-sm font-semibold text-gray-700">Messages in-app cibles</span>
             <span class="metric-chip px-4 py-2 rounded-full text-sm font-semibold text-gray-700">Tarification par site actif</span>
             <span class="metric-chip px-4 py-2 rounded-full text-sm font-semibold text-gray-700">Pensé pour l’exploitation réelle</span>
           </div>
@@ -293,6 +297,66 @@
           </div>
 
           
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- V1 ACTUELLE -->
+  <section id="v1" class="py-24 bg-white">
+    <div class="container-premium mx-auto px-6 lg:px-8">
+      <div class="grid lg:grid-cols-[0.9fr_1.1fr] gap-12 items-start">
+        <div>
+          <span class="section-kicker mb-4">V1 actuelle</span>
+          <h2 class="text-3xl md:text-4xl font-bold mt-2 mb-6 tracking-tight">
+            La version 1 couvre deja le parcours essentiel d'une salle
+          </h2>
+          <p class="text-lg text-gray-600 leading-relaxed mb-6">
+            SmartClub Pro n'est pas seulement une vitrine: la V1 structure le quotidien du club, du back-office jusqu'a l'espace mobile du membre.
+          </p>
+          <div class="premium-card rounded-[28px] p-6">
+            <p class="text-sm font-bold text-[#004e92] uppercase tracking-wide mb-3">Ce qui est pret pour l'exploitation</p>
+            <ul class="space-y-3 text-gray-600">
+              <li><i class="fas fa-check text-green-500 mr-2"></i> Creation owner, organisation, salles et modules</li>
+              <li><i class="fas fa-check text-green-500 mr-2"></i> Portail membre mobile PWA avec carte, QR code et abonnement</li>
+              <li><i class="fas fa-check text-green-500 mr-2"></i> Formules consultables et demandes de souscription</li>
+              <li><i class="fas fa-check text-green-500 mr-2"></i> Messages in-app cibles par audience membre</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-5">
+          <div class="soft-card rounded-3xl p-7">
+            <div class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mb-5 text-[#004e92] text-xl">
+              <i class="fas fa-mobile-screen-button"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-3">Espace membre PWA</h3>
+            <p class="text-gray-500">Le membre retrouve son identite, son QR code, son coach, ses acces, ses paiements et ses messages depuis mobile.</p>
+          </div>
+
+          <div class="soft-card rounded-3xl p-7">
+            <div class="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center mb-5 text-[#FF8C00] text-xl">
+              <i class="fas fa-comments"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-3">Communication in-app</h3>
+            <p class="text-gray-500">Les admins et managers peuvent envoyer un message a un membre, tous les membres, les actifs, les expires ou les suspendus.</p>
+          </div>
+
+          <div class="soft-card rounded-3xl p-7">
+            <div class="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center mb-5 text-green-600 text-xl">
+              <i class="fas fa-tags"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-3">Souscriptions preparees</h3>
+            <p class="text-gray-500">Le membre peut choisir une formule et creer une demande; le paiement en ligne pourra etre branche ensuite sans casser la V1.</p>
+          </div>
+
+          <div class="soft-card rounded-3xl p-7">
+            <div class="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mb-5 text-slate-700 text-xl">
+              <i class="fas fa-shield-halved"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-3">Cadre stable</h3>
+            <p class="text-gray-500">La V1 reste volontairement sobre: pas de temps reel fragile, pas de paiement force avant l'integration officielle de l'agregateur.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -377,6 +441,18 @@
         </div>
 
         <div class="soft-card rounded-3xl p-8">
+          <div class="w-14 h-14 bg-sky-100 rounded-2xl flex items-center justify-center mb-5 text-sky-600 text-2xl"><i class="fas fa-mobile-screen-button"></i></div>
+          <h3 class="text-xl font-bold mb-3">Espace membre PWA</h3>
+          <p class="text-gray-500">Donnez au membre un espace mobile avec carte, QR code, abonnement, coach, paiements, acces et messages.</p>
+        </div>
+
+        <div class="soft-card rounded-3xl p-8">
+          <div class="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mb-5 text-emerald-600 text-2xl"><i class="fas fa-comments"></i></div>
+          <h3 class="text-xl font-bold mb-3">Messages membres</h3>
+          <p class="text-gray-500">Envoyez des messages in-app cibles: un membre, tous, actifs, expires, suspendus ou sans abonnement.</p>
+        </div>
+
+        <div class="soft-card rounded-3xl p-8">
           <div class="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mb-5 text-green-600 text-2xl"><i class="fas fa-money-bill-wave"></i></div>
           <h3 class="text-xl font-bold mb-3">Caisse / paiements</h3>
           <p class="text-gray-500">Enregistrez les flux financiers qui structurent réellement l’activité du club.</p>
@@ -451,6 +527,8 @@
           <ul class="space-y-3 mb-8 text-gray-600">
             <li><i class="fas fa-check text-green-500 mr-2"></i> Membres</li>
             <li><i class="fas fa-check text-green-500 mr-2"></i> Abonnements</li>
+            <li><i class="fas fa-check text-green-500 mr-2"></i> Espace membre PWA</li>
+            <li><i class="fas fa-check text-green-500 mr-2"></i> Messages membres in-app</li>
             <li><i class="fas fa-check text-green-500 mr-2"></i> Caisse / paiements</li>
             <li><i class="fas fa-check text-green-500 mr-2"></i> Rapports</li>
             <li><i class="fas fa-check text-green-500 mr-2"></i> Contrôle d’accès</li>
@@ -459,7 +537,7 @@
 
           <div class="border-t border-slate-200 pt-6 mb-8">
             <p class="text-gray-600 leading-relaxed">
-              Le Pack Club permet de structurer l’exploitation quotidienne autour du coeur du club : adhérents, abonnements, paiements, accès, coaching et pilotage.
+              Le Pack Club permet de structurer l’exploitation quotidienne autour du coeur du club : adherents, abonnements, espace membre, messages, paiements, acces, coaching et pilotage.
             </p>
           </div>
 
@@ -684,6 +762,30 @@
 
         <div class="faq-item">
           <button class="faq-button" type="button">
+            <span>Le membre a-t-il un espace mobile ?</span>
+            <i class="fas fa-chevron-down faq-icon"></i>
+          </button>
+          <div class="faq-content">
+            <div class="faq-content-inner">
+              Oui. La V1 inclut un espace membre mobile PWA avec carte, QR code, abonnement, coach, acces, paiements et messages de la salle.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-button" type="button">
+            <span>La salle peut-elle communiquer avec ses membres ?</span>
+            <i class="fas fa-chevron-down faq-icon"></i>
+          </button>
+          <div class="faq-content">
+            <div class="faq-content-inner">
+              Oui. Les admins et managers peuvent envoyer des messages in-app a un membre precis ou a une audience: tous, actifs, expires, expiration dans 7 jours, suspendus ou sans abonnement.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-button" type="button">
             <span>À quel moment passer au Pack Premium ?</span>
             <i class="fas fa-chevron-down faq-icon"></i>
           </button>
@@ -767,7 +869,7 @@
         </div>
       </div>
       <hr class="border-gray-800 my-8">
-      <p class="text-xs text-center text-gray-500">© 2025 SmartClub Pro – Tous droits réservés.</p>
+      <p class="text-xs text-center text-gray-500">© 2026 SmartClub Pro – Tous droits réservés.</p>
     </div>
   </footer>
 
@@ -834,6 +936,6 @@
     });
   </script>
 
-  <script src="{% static 'js/script_accueil.js' %}?v=landing-premium-v2-faq"></script>
+  <script src="{% static 'js/script_accueil.js' %}?v=landing-v1-member-messaging"></script>
 </body>
 </html>
