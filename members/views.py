@@ -75,6 +75,19 @@ def _status_class(status):
     }.get(status, "is-unknown")
 
 
+def _member_tab_config(unread_notification_count):
+    badge = str(unread_notification_count) if unread_notification_count else ""
+    return [
+        {"key": "card", "label": "Carte", "icon": "card"},
+        {"key": "messages", "label": "Messages", "icon": "mail", "badge": badge},
+        {"key": "coach", "label": "Coach", "icon": "coach"},
+        {"key": "subscription", "label": "Abonnement", "icon": "subscription"},
+        {"key": "plans", "label": "Formules", "icon": "plans"},
+        {"key": "history", "label": "Acces", "icon": "history"},
+        {"key": "payments", "label": "Paiements", "icon": "payments"},
+    ]
+
+
 @login_required
 def member_portal(request):
     """
@@ -109,7 +122,7 @@ def member_portal(request):
         gym=member.gym,
         member=member,
         channel=Notification.CHANNEL_IN_APP,
-    ).select_related("sent_by").order_by("-created_at")[:8]
+    ).select_related("sent_by").order_by("-created_at")[:18]
     unread_notification_count = Notification.objects.filter(
         gym=member.gym,
         member=member,
@@ -130,6 +143,22 @@ def member_portal(request):
     ).select_related("plan").order_by("-created_at")
     pending_plan_ids = list(pending_requests.values_list("plan_id", flat=True))
     status = member.computed_status
+    active_tab = request.GET.get("tab", "card")
+    member_notifications_list = list(member_notifications)
+    unread_notifications = [item for item in member_notifications_list if not item.read_at]
+    read_notifications = [item for item in member_notifications_list if item.read_at]
+    if active_tab not in {tab["key"] for tab in _member_tab_config(unread_notification_count)}:
+        active_tab = "card"
+
+    member_tabs = []
+    for tab in _member_tab_config(unread_notification_count):
+        member_tabs.append(
+            {
+                **tab,
+                "url": f"{reverse('members:member_portal')}?tab={tab['key']}",
+                "is_active": tab["key"] == active_tab,
+            }
+        )
 
     context = {
         "member": member,
@@ -141,8 +170,13 @@ def member_portal(request):
         "payments": payments,
         "access_logs": access_logs,
         "coaches": coaches,
-        "member_notifications": member_notifications,
+        "member_notifications": member_notifications_list,
+        "unread_notifications": unread_notifications[:5],
+        "recent_notifications": read_notifications[:6],
+        "archived_notifications": read_notifications[6:18],
         "unread_notification_count": unread_notification_count,
+        "member_tabs": member_tabs,
+        "active_tab": active_tab,
         "available_plans": available_plans,
         "pending_requests": pending_requests,
         "pending_plan_ids": pending_plan_ids,
@@ -204,7 +238,7 @@ def member_subscription_request(request):
         request,
         "Demande de souscription enregistree. Le paiement sera finalise quand le module de paiement sera branche.",
     )
-    return redirect(f"{reverse('members:member_portal')}#plans")
+    return redirect(f"{reverse('members:member_portal')}?tab=plans")
 
 
 @login_required
@@ -231,7 +265,7 @@ def member_notification_read(request, notification_id):
         notification.read_at = timezone.now()
         notification.save(update_fields=["read_at"])
 
-    return redirect(f"{reverse('members:member_portal')}#messages")
+    return redirect(f"{reverse('members:member_portal')}?tab=messages")
 
 
 @login_required

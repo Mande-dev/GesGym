@@ -11,7 +11,7 @@
     <title>{{ gym.name }} | Espace membre</title>
     <link rel="manifest" href="{{ pwa_manifest_url }}">
     <link rel="apple-touch-icon" href="{% static 'icons/1.png' %}">
-    <link rel="stylesheet" href="{% static 'css/member-portal.css' %}?v=20260429c">
+    <link rel="stylesheet" href="{% static 'css/member-portal.css' %}?v=20260430a">
 </head>
 <body data-service-worker-url="{{ pwa_service_worker_url }}">
     <main class="member-app-shell">
@@ -33,6 +33,10 @@
                     <span aria-hidden="true">+</span>
                     Installer l'app
                 </button>
+                <button type="button" class="refresh-button" id="refreshAppBtn" aria-label="Actualiser la page">
+                    <span aria-hidden="true">&#8635;</span>
+                    Actualiser
+                </button>
                 <a class="logout-button" href="{% url 'compte:logout' %}" aria-label="Se deconnecter" title="Se deconnecter">
                     <span aria-hidden="true">-></span>
                     Deconnexion
@@ -40,283 +44,344 @@
             </div>
         </header>
 
-        <section class="hero-panel {{ status_class }}" id="card">
-            <div class="member-identity">
-                <div class="avatar">
-                    {% if member.photo %}
-                        <img src="{{ member.photo.url }}" alt="{{ member.first_name }} {{ member.last_name }}">
-                    {% else %}
-                        <span>{{ member.first_name|slice:":1" }}{{ member.last_name|slice:":1" }}</span>
-                    {% endif %}
-                </div>
-                <div>
-                    <span class="status-pill">{{ status_label }}</span>
-                    <h2>{{ member.first_name }} {{ member.last_name }}</h2>
-                    <p>{{ member_code }}</p>
-                </div>
-            </div>
-
-            <div class="access-card">
-                <div class="access-card-head">
-                    <div>
-                        <span>Carte membre</span>
-                        <strong>{{ gym.name }}</strong>
-                    </div>
-                    {% if organization.logo %}
-                        <img src="{{ organization.logo.url }}" alt="{{ organization.name }}">
-                    {% else %}
-                        <img src="{% static 'avatar/logo_smartclub.png' %}" alt="SmartClub">
-                    {% endif %}
-                </div>
-
-                <div class="qr-zone">
-                    <img src="{% url 'members:member_portal_qr' %}" alt="QR code membre">
-                    <div>
-                        <p>Code d'acces</p>
-                        <strong>{{ member_code }}</strong>
-                        <small>Presentez ce QR code a l'accueil.</small>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="info-grid" id="identity">
-            <article class="info-block">
-                <span>Identifiant</span>
-                <strong>{{ member.user.username }}</strong>
-                <button type="button" class="text-button" data-copy="{{ member.user.username }}">Copier</button>
-            </article>
-            <article class="info-block">
-                <span>Telephone</span>
-                <strong>{{ member.phone|default:"-" }}</strong>
-            </article>
-            <article class="info-block wide">
-                <span>Email</span>
-                <strong>{{ member.email|default:"-" }}</strong>
-            </article>
-        </section>
-
-        <section class="content-panel" id="messages">
-            <div class="section-heading">
-                <div>
-                    <p class="eyebrow">Messages</p>
-                    <h2>De la salle</h2>
-                </div>
-                {% if unread_notification_count %}
-                    <span class="metric">{{ unread_notification_count }} new</span>
-                {% endif %}
-            </div>
-
-            <div class="member-message-list">
-                {% for notification in member_notifications %}
-                    <article class="member-message-card {% if not notification.read_at %}is-unread{% endif %}">
-                        <div class="member-message-head">
-                            <strong>{{ notification.title|default:"Message de la salle" }}</strong>
-                            {% if not notification.read_at %}
-                                <span>Non lu</span>
-                            {% endif %}
-                        </div>
-                        <p>{{ notification.message }}</p>
-                        <small>{{ notification.created_at|date:"d/m/Y H:i" }}</small>
-                        {% if not notification.read_at %}
-                            <form method="post" action="{% url 'members:member_notification_read' notification.id %}">
-                                {% csrf_token %}
-                                <button type="submit" class="text-button">Marquer comme lu</button>
-                            </form>
+        {% if active_tab == "card" %}
+            <section class="hero-panel {{ status_class }}" id="card">
+                <div class="member-identity">
+                    <div class="avatar">
+                        {% if member.photo %}
+                            <img src="{{ member.photo.url }}" alt="{{ member.first_name }} {{ member.last_name }}">
+                        {% else %}
+                            <span>{{ member.first_name|slice:":1" }}{{ member.last_name|slice:":1" }}</span>
                         {% endif %}
+                    </div>
+                    <div>
+                        <span class="status-pill">{{ status_label }}</span>
+                        <h2>{{ member.first_name }} {{ member.last_name }}</h2>
+                        <p>{{ member_code }}</p>
+                    </div>
+                </div>
+
+                <div class="access-card">
+                    <div class="access-card-head">
+                        <div>
+                            <span>Carte membre</span>
+                            <strong>{{ gym.name }}</strong>
+                        </div>
+                        {% if organization.logo %}
+                            <img src="{{ organization.logo.url }}" alt="{{ organization.name }}">
+                        {% else %}
+                            <img src="{% static 'avatar/logo_smartclub.png' %}" alt="SmartClub">
+                        {% endif %}
+                    </div>
+
+                    <div class="qr-zone">
+                        <img src="{% url 'members:member_portal_qr' %}" alt="QR code membre">
+                        <div>
+                            <p>Code d'acces</p>
+                            <strong>{{ member_code }}</strong>
+                            <small>Presentez ce QR code a l'accueil.</small>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="info-grid" id="identity">
+                <article class="info-block">
+                    <span>Identifiant</span>
+                    <strong>{{ member.user.username }}</strong>
+                    <button type="button" class="text-button" data-copy="{{ member.user.username }}">Copier</button>
+                </article>
+                <article class="info-block">
+                    <span>Telephone</span>
+                    <strong>{{ member.phone|default:"-" }}</strong>
+                </article>
+                <article class="info-block wide">
+                    <span>Email</span>
+                    <strong>{{ member.email|default:"-" }}</strong>
+                </article>
+            </section>
+        {% elif active_tab == "messages" %}
+            <section class="content-panel">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Messages</p>
+                        <h2>Boite de reception</h2>
+                    </div>
+                    <span class="metric {% if unread_notification_count %}attention{% endif %}">
+                        {{ unread_notification_count }} non lu{{ unread_notification_count|pluralize:"s" }}
+                    </span>
+                </div>
+
+                <div class="message-summary-grid">
+                    <article class="summary-card">
+                        <span>Non lus</span>
+                        <strong>{{ unread_notification_count }}</strong>
+                        <small>Ceux qui demandent ton attention maintenant.</small>
                     </article>
-                {% empty %}
-                    <p class="empty-state">Aucun message de votre salle pour le moment.</p>
-                {% endfor %}
-            </div>
-        </section>
-
-        <section class="content-panel" id="coach">
-            <div class="section-heading">
-                <div>
-                    <p class="eyebrow">Coaching</p>
-                    <h2>Mon accompagnement</h2>
+                    <article class="summary-card">
+                        <span>Recents</span>
+                        <strong>{{ member_notifications|length }}</strong>
+                        <small>Vue compacte pour eviter les longues listes.</small>
+                    </article>
                 </div>
-            </div>
 
-            {% if coaches %}
-                <div class="coach-list">
-                    {% for coach in coaches %}
-                        <article class="coach-card">
-                            <div class="coach-avatar">{{ coach.name|slice:":1" }}</div>
-                            <div>
-                                <strong>{{ coach.name }}</strong>
-                                <small>{{ coach.specialty|default:"Coach" }}{% if coach.phone %} - {{ coach.phone }}{% endif %}</small>
-                            </div>
-                        </article>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p class="empty-state">Aucun coach n'est encore rattache a votre compte.</p>
-            {% endif %}
-        </section>
-
-        <section class="content-panel" id="subscription">
-            <div class="section-heading">
-                <div>
-                    <p class="eyebrow">Abonnement</p>
-                    <h2>{{ member.subscription_type }}</h2>
-                </div>
-                {% if days_remaining != None %}
-                    {% if days_remaining >= 0 %}
-                        <span class="metric">{{ days_remaining }} j</span>
-                    {% else %}
-                        <span class="metric danger">Expire</span>
-                    {% endif %}
+                {% if unread_notifications %}
+                    <div class="message-group">
+                        <div class="message-group-head">
+                            <h3>Prioritaires</h3>
+                            <small>Les plus recentes non lues</small>
+                        </div>
+                        <div class="member-message-list">
+                            {% for notification in unread_notifications %}
+                                <article class="member-message-card is-unread">
+                                    <div class="member-message-head">
+                                        <strong>{{ notification.title|default:"Message de la salle" }}</strong>
+                                        <span>Non lu</span>
+                                    </div>
+                                    <p>{{ notification.message }}</p>
+                                    <small>{{ notification.created_at|date:"d/m/Y H:i" }}</small>
+                                    <form method="post" action="{% url 'members:member_notification_read' notification.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-button">Marquer comme lu</button>
+                                    </form>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    </div>
                 {% endif %}
-            </div>
 
-            {% if subscription %}
-                <div class="progress-track" aria-label="Progression de l'abonnement">
-                    <span style="width: {{ subscription_progress }}%;"></span>
+                {% if recent_notifications %}
+                    <div class="message-group">
+                        <div class="message-group-head">
+                            <h3>Recents</h3>
+                            <small>Resume rapide des derniers messages deja lus</small>
+                        </div>
+                        <div class="message-compact-list">
+                            {% for notification in recent_notifications %}
+                                <article class="message-compact-card">
+                                    <div class="message-compact-meta">
+                                        <strong>{{ notification.title|default:"Message de la salle" }}</strong>
+                                        <small>{{ notification.created_at|date:"d/m H:i" }}</small>
+                                    </div>
+                                    <p>{{ notification.message|truncatechars:110 }}</p>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if archived_notifications %}
+                    <details class="message-archive">
+                        <summary>Archives recentes ({{ archived_notifications|length }})</summary>
+                        <div class="message-compact-list archive-list">
+                            {% for notification in archived_notifications %}
+                                <article class="message-compact-card is-muted">
+                                    <div class="message-compact-meta">
+                                        <strong>{{ notification.title|default:"Message de la salle" }}</strong>
+                                        <small>{{ notification.created_at|date:"d/m/Y H:i" }}</small>
+                                    </div>
+                                    <p>{{ notification.message|truncatechars:140 }}</p>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    </details>
+                {% endif %}
+
+                {% if not member_notifications %}
+                    <p class="empty-state">Aucun message de votre salle pour le moment.</p>
+                {% endif %}
+            </section>
+        {% elif active_tab == "coach" %}
+            <section class="content-panel">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Coaching</p>
+                        <h2>Mon accompagnement</h2>
+                    </div>
                 </div>
-                <dl class="detail-list">
-                    <div>
-                        <dt>Debut</dt>
-                        <dd>{{ subscription.start_date|date:"d/m/Y" }}</dd>
-                    </div>
-                    <div>
-                        <dt>Expiration</dt>
-                        <dd>{{ subscription.end_date|date:"d/m/Y" }}</dd>
-                    </div>
-                    <div>
-                        <dt>Formule</dt>
-                        <dd>{{ subscription.plan.name|default:"-" }}</dd>
-                    </div>
-                    <div>
-                        <dt>Prix</dt>
-                        <dd>{{ subscription.plan.price|floatformat:2 }} USD</dd>
-                    </div>
-                </dl>
-            {% else %}
-                <p class="empty-state">Aucun abonnement actif n'est rattache a ce compte.</p>
-            {% endif %}
-        </section>
 
-        <section class="content-panel" id="plans">
-            <div class="section-heading plan-heading">
-                <div>
-                    <p class="eyebrow">Formules</p>
-                    <h2>Choisir un abonnement</h2>
-                    <small>Selectionnez une formule. Le paiement sera finalise via le module en ligne.</small>
+                {% if coaches %}
+                    <div class="coach-list">
+                        {% for coach in coaches %}
+                            <article class="coach-card">
+                                <div class="coach-avatar">{{ coach.name|slice:":1" }}</div>
+                                <div>
+                                    <strong>{{ coach.name }}</strong>
+                                    <small>{{ coach.specialty|default:"Coach" }}{% if coach.phone %} - {{ coach.phone }}{% endif %}</small>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="empty-state">Aucun coach n'est encore rattache a votre compte.</p>
+                {% endif %}
+            </section>
+        {% elif active_tab == "subscription" %}
+            <section class="content-panel">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Abonnement</p>
+                        <h2>{{ member.subscription_type }}</h2>
+                    </div>
+                    {% if days_remaining != None %}
+                        {% if days_remaining >= 0 %}
+                            <span class="metric">{{ days_remaining }} j</span>
+                        {% else %}
+                            <span class="metric danger">Expire</span>
+                        {% endif %}
+                    {% endif %}
                 </div>
-            </div>
 
-            {% if pending_requests %}
-                <div class="pending-box">
-                    <strong>Demande en attente</strong>
-                    {% for request_item in pending_requests %}
-                        <small>{{ request_item.plan.name }} - {{ request_item.price_usd|floatformat:2 }} USD</small>
-                    {% endfor %}
+                {% if subscription %}
+                    <div class="progress-track" aria-label="Progression de l'abonnement">
+                        <span style="width: {{ subscription_progress }}%;"></span>
+                    </div>
+                    <dl class="detail-list">
+                        <div>
+                            <dt>Debut</dt>
+                            <dd>{{ subscription.start_date|date:"d/m/Y" }}</dd>
+                        </div>
+                        <div>
+                            <dt>Expiration</dt>
+                            <dd>{{ subscription.end_date|date:"d/m/Y" }}</dd>
+                        </div>
+                        <div>
+                            <dt>Formule</dt>
+                            <dd>{{ subscription.plan.name|default:"-" }}</dd>
+                        </div>
+                        <div>
+                            <dt>Prix</dt>
+                            <dd>{{ subscription.plan.price|floatformat:2 }} USD</dd>
+                        </div>
+                    </dl>
+                {% else %}
+                    <p class="empty-state">Aucun abonnement actif n'est rattache a ce compte.</p>
+                {% endif %}
+            </section>
+        {% elif active_tab == "plans" %}
+            <section class="content-panel">
+                <div class="section-heading plan-heading">
+                    <div>
+                        <p class="eyebrow">Formules</p>
+                        <h2>Choisir un abonnement</h2>
+                        <small>Selectionnez une formule. Le paiement sera finalise via le module en ligne.</small>
+                    </div>
                 </div>
-            {% endif %}
 
-            <div class="plan-list">
-                {% for plan in available_plans %}
-                    <article class="plan-card {% if plan.id == current_plan_id %}is-current{% elif forloop.first %}is-featured{% endif %}">
-                        <div class="plan-main">
-                            <div class="plan-title-row">
-                                <strong>{{ plan.name }}</strong>
+                {% if pending_requests %}
+                    <div class="pending-box">
+                        <strong>Demande en attente</strong>
+                        {% for request_item in pending_requests %}
+                            <small>{{ request_item.plan.name }} - {{ request_item.price_usd|floatformat:2 }} USD</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="plan-list">
+                    {% for plan in available_plans %}
+                        <article class="plan-card {% if plan.id == current_plan_id %}is-current{% elif forloop.first %}is-featured{% endif %}">
+                            <div class="plan-main">
+                                <div class="plan-title-row">
+                                    <strong>{{ plan.name }}</strong>
+                                    {% if plan.id == current_plan_id %}
+                                        <span class="plan-badge current">Actuel</span>
+                                    {% elif forloop.first %}
+                                        <span class="plan-badge">Populaire</span>
+                                    {% endif %}
+                                </div>
+                                <div class="plan-price">
+                                    <span>{{ plan.price|floatformat:2 }}</span>
+                                    <small>USD</small>
+                                </div>
+                                {% if plan.description %}
+                                    <p>{{ plan.description }}</p>
+                                {% endif %}
+                                <ul class="plan-benefits" aria-label="Avantages de la formule">
+                                    <li>{{ plan.duration_days }} jours d'acces</li>
+                                    <li>Carte membre et QR code inclus</li>
+                                    <li>Suivi dans l'espace membre</li>
+                                </ul>
+                            </div>
+                            <div class="plan-action">
                                 {% if plan.id == current_plan_id %}
-                                    <span class="plan-badge current">Actuel</span>
-                                {% elif forloop.first %}
-                                    <span class="plan-badge">Populaire</span>
+                                    <button type="button" class="action-button muted" disabled>Formule active</button>
+                                {% elif plan.id in pending_plan_ids %}
+                                    <button type="button" class="action-button muted" disabled>En attente</button>
+                                {% else %}
+                                    <form method="post" action="{% url 'members:member_subscription_request' %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="plan_id" value="{{ plan.id }}">
+                                        <button type="submit" class="action-button">Souscrire</button>
+                                    </form>
                                 {% endif %}
                             </div>
-                            <div class="plan-price">
-                                <span>{{ plan.price|floatformat:2 }}</span>
-                                <small>USD</small>
+                        </article>
+                    {% empty %}
+                        <p class="empty-state">Aucune formule active n'est disponible pour le moment.</p>
+                    {% endfor %}
+                </div>
+            </section>
+        {% elif active_tab == "history" %}
+            <section class="content-panel">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Activite</p>
+                        <h2>Derniers acces</h2>
+                    </div>
+                </div>
+
+                <div class="timeline-list">
+                    {% for log in access_logs %}
+                        <div class="timeline-item">
+                            <span class="dot {% if log.access_granted %}ok{% else %}ko{% endif %}"></span>
+                            <div>
+                                <strong>{% if log.access_granted %}Acces autorise{% else %}Acces refuse{% endif %}</strong>
+                                <small>{{ log.check_in_time|date:"d/m/Y H:i" }}{% if log.denial_reason %} - {{ log.denial_reason }}{% endif %}</small>
                             </div>
-                            {% if plan.description %}
-                                <p>{{ plan.description }}</p>
-                            {% endif %}
-                            <ul class="plan-benefits" aria-label="Avantages de la formule">
-                                <li>{{ plan.duration_days }} jours d'acces</li>
-                                <li>Carte membre et QR code inclus</li>
-                                <li>Suivi dans l'espace membre</li>
-                            </ul>
                         </div>
-                        <div class="plan-action">
-                            {% if plan.id == current_plan_id %}
-                                <button type="button" class="action-button muted" disabled>Formule active</button>
-                            {% elif plan.id in pending_plan_ids %}
-                                <button type="button" class="action-button muted" disabled>En attente</button>
-                            {% else %}
-                                <form method="post" action="{% url 'members:member_subscription_request' %}">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="plan_id" value="{{ plan.id }}">
-                                    <button type="submit" class="action-button">Souscrire</button>
-                                </form>
-                            {% endif %}
-                        </div>
-                    </article>
-                {% empty %}
-                    <p class="empty-state">Aucune formule active n'est disponible pour le moment.</p>
-                {% endfor %}
-            </div>
-        </section>
-
-        <section class="content-panel" id="history">
-            <div class="section-heading">
-                <div>
-                    <p class="eyebrow">Activite</p>
-                    <h2>Derniers acces</h2>
+                    {% empty %}
+                        <p class="empty-state">Aucun acces enregistre pour le moment.</p>
+                    {% endfor %}
                 </div>
-            </div>
-
-            <div class="timeline-list">
-                {% for log in access_logs %}
-                    <div class="timeline-item">
-                        <span class="dot {% if log.access_granted %}ok{% else %}ko{% endif %}"></span>
-                        <div>
-                            <strong>{% if log.access_granted %}Acces autorise{% else %}Acces refuse{% endif %}</strong>
-                            <small>{{ log.check_in_time|date:"d/m/Y H:i" }}{% if log.denial_reason %} - {{ log.denial_reason }}{% endif %}</small>
-                        </div>
+            </section>
+        {% elif active_tab == "payments" %}
+            <section class="content-panel">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Paiements</p>
+                        <h2>Dernieres operations</h2>
                     </div>
-                {% empty %}
-                    <p class="empty-state">Aucun acces enregistre pour le moment.</p>
-                {% endfor %}
-            </div>
-        </section>
-
-        <section class="content-panel">
-            <div class="section-heading">
-                <div>
-                    <p class="eyebrow">Paiements</p>
-                    <h2>Dernieres operations</h2>
                 </div>
-            </div>
 
-            <div class="payment-list">
-                {% for payment in payments %}
-                    <div class="payment-row">
-                        <div>
-                            <strong>{{ payment.description|default:"Paiement" }}</strong>
-                            <small>{{ payment.created_at|date:"d/m/Y H:i" }} - {{ payment.get_method_display }}</small>
+                <div class="payment-list">
+                    {% for payment in payments %}
+                        <div class="payment-row">
+                            <div>
+                                <strong>{{ payment.description|default:"Paiement" }}</strong>
+                                <small>{{ payment.created_at|date:"d/m/Y H:i" }} - {{ payment.get_method_display }}</small>
+                            </div>
+                            <span>{{ payment.amount_cdf|floatformat:0 }} CDF</span>
                         </div>
-                        <span>{{ payment.amount_cdf|floatformat:0 }} CDF</span>
-                    </div>
-                {% empty %}
-                    <p class="empty-state">Aucun paiement recent.</p>
-                {% endfor %}
-            </div>
-        </section>
+                    {% empty %}
+                        <p class="empty-state">Aucun paiement recent.</p>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
     </main>
 
     <nav class="mobile-dock" aria-label="Navigation membre">
-        <a href="#card">Carte</a>
-        <a href="#messages">Messages</a>
-        <a href="#coach">Coach</a>
-        <a href="#plans">Formules</a>
-        <a href="#history">Acces</a>
+        {% for tab in member_tabs %}
+            <a href="{{ tab.url }}" class="{% if tab.is_active %}is-active{% endif %}">
+                <span>{{ tab.label }}</span>
+                {% if tab.badge %}
+                    <em>{{ tab.badge }}</em>
+                {% endif %}
+            </a>
+        {% endfor %}
     </nav>
 
     <div class="copy-toast" id="copyToast" role="status" aria-live="polite">Copie</div>
-    <script src="{% static 'js/member-portal.js' %}?v=20260429c"></script>
+    <script src="{% static 'js/member-portal.js' %}?v=20260430a"></script>
 </body>
 </html>

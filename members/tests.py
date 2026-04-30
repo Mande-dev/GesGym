@@ -214,14 +214,20 @@ class MemberPortalTests(TestCase):
         self.assertContains(response, "Carte membre")
         self.assertContains(response, f"MEM-{self.member.id:05d}")
         self.assertContains(response, self.member.user.username)
-        self.assertContains(response, "Mensuel")
-        self.assertContains(response, "Coach Junior")
-        self.assertContains(response, "Musculation")
-        self.assertContains(response, "Choisir un abonnement")
-        self.assertContains(response, "Annuel")
         self.assertContains(response, reverse("members:member_portal_qr"))
         self.assertNotContains(response, "Imprimer carte")
         self.assertNotContains(response, "window.print")
+
+        subscription_response = self.client.get(reverse("members:member_portal"), {"tab": "subscription"})
+        self.assertContains(subscription_response, "Mensuel")
+
+        coach_response = self.client.get(reverse("members:member_portal"), {"tab": "coach"})
+        self.assertContains(coach_response, "Coach Junior")
+        self.assertContains(coach_response, "Musculation")
+
+        plans_response = self.client.get(reverse("members:member_portal"), {"tab": "plans"})
+        self.assertContains(plans_response, "Choisir un abonnement")
+        self.assertContains(plans_response, "Annuel")
 
     def test_member_can_read_in_app_notification(self):
         notification = Notification.objects.create(
@@ -235,7 +241,7 @@ class MemberPortalTests(TestCase):
         )
         self.client.force_login(self.member.user)
 
-        response = self.client.get(reverse("members:member_portal"))
+        response = self.client.get(reverse("members:member_portal"), {"tab": "messages"})
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Bienvenue")
@@ -246,7 +252,7 @@ class MemberPortalTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response["Location"], f"{reverse('members:member_portal')}#messages")
+        self.assertEqual(response["Location"], f"{reverse('members:member_portal')}?tab=messages")
         notification.refresh_from_db()
         self.assertIsNotNone(notification.read_at)
 
@@ -259,7 +265,7 @@ class MemberPortalTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response["Location"], f"{reverse('members:member_portal')}#plans")
+        self.assertEqual(response["Location"], f"{reverse('members:member_portal')}?tab=plans")
 
         request_obj = SubscriptionRequest.objects.get(member=self.member, plan=self.year_plan)
         self.assertEqual(request_obj.gym, self.gym)
@@ -269,9 +275,39 @@ class MemberPortalTests(TestCase):
         self.subscription.refresh_from_db()
         self.assertTrue(self.subscription.is_active)
 
-        response = self.client.get(reverse("members:member_portal"))
+        response = self.client.get(reverse("members:member_portal"), {"tab": "plans"})
         self.assertContains(response, "Demande en attente")
         self.assertContains(response, "En attente")
+
+    def test_member_portal_messages_tab_shows_unread_badge_and_compact_sections(self):
+        Notification.objects.create(
+            gym=self.gym,
+            member=self.member,
+            title="Info 1",
+            message="Premier message important",
+            channel=Notification.CHANNEL_IN_APP,
+            status=Notification.STATUS_SENT,
+            sent_at=timezone.now(),
+        )
+        Notification.objects.create(
+            gym=self.gym,
+            member=self.member,
+            title="Info 2",
+            message="Second message deja lu",
+            channel=Notification.CHANNEL_IN_APP,
+            status=Notification.STATUS_SENT,
+            sent_at=timezone.now(),
+            read_at=timezone.now(),
+        )
+        self.client.force_login(self.member.user)
+
+        response = self.client.get(reverse("members:member_portal"), {"tab": "messages"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Boite de reception")
+        self.assertContains(response, "Prioritaires")
+        self.assertContains(response, "Recents")
+        self.assertContains(response, "1 non lu")
 
     def test_member_portal_qr_is_limited_to_authenticated_member(self):
         anonymous_response = self.client.get(reverse("members:member_portal_qr"))

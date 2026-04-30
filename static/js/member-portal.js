@@ -2,6 +2,7 @@
     const body = document.body;
     const serviceWorkerUrl = body ? body.dataset.serviceWorkerUrl : "";
     const installButton = document.getElementById("installAppBtn");
+    const refreshButton = document.getElementById("refreshAppBtn");
     const toast = document.getElementById("copyToast");
     let deferredInstallPrompt = null;
     let toastTimer = null;
@@ -41,6 +42,15 @@
             await deferredInstallPrompt.userChoice.catch(function () {});
             deferredInstallPrompt = null;
             installButton.hidden = true;
+        });
+    }
+
+    if (refreshButton) {
+        refreshButton.addEventListener("click", function () {
+            refreshButton.disabled = true;
+            refreshButton.setAttribute("aria-busy", "true");
+            showToast("Actualisation...");
+            window.location.reload();
         });
     }
 

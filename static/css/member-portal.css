@@ -103,7 +103,8 @@ a {
 }
 
 .logout-button,
-.install-button {
+.install-button,
+.refresh-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -120,7 +121,8 @@ a {
 }
 
 .logout-button span,
-.install-button span {
+.install-button span,
+.refresh-button span {
     font-size: 1rem;
     line-height: 1;
 }
@@ -132,10 +134,19 @@ a {
     border-color: rgba(0, 78, 146, 0.18);
 }
 
+.refresh-button {
+    cursor: pointer;
+    background: rgba(16, 40, 32, 0.06);
+    color: var(--ink);
+    border-color: rgba(16, 40, 32, 0.12);
+}
+
 .logout-button:hover,
 .logout-button:focus,
 .install-button:hover,
-.install-button:focus {
+.install-button:focus,
+.refresh-button:hover,
+.refresh-button:focus {
     transform: translateY(-1px);
     box-shadow: 0 10px 24px rgba(16, 40, 32, 0.1);
 }
@@ -383,6 +394,13 @@ a {
     font-weight: 900;
 }
 
+.section-heading h3,
+.message-group-head h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 900;
+}
+
 .plan-heading small {
     display: block;
     max-width: 460px;
@@ -405,6 +423,118 @@ a {
 .metric.danger {
     background: rgba(180, 35, 24, 0.12);
     color: var(--danger);
+}
+
+.metric.attention {
+    background: rgba(255, 140, 0, 0.12);
+    color: var(--warn);
+}
+
+.message-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.summary-card {
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: #fbfcfb;
+    padding: 14px;
+}
+
+.summary-card span {
+    display: block;
+    color: var(--muted);
+    font-size: 0.74rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.summary-card strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 1.7rem;
+    line-height: 1;
+}
+
+.summary-card small,
+.message-group-head small {
+    display: block;
+    margin-top: 6px;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.message-group + .message-group,
+.message-archive {
+    margin-top: 18px;
+}
+
+.message-group-head {
+    margin-bottom: 10px;
+}
+
+.message-compact-list {
+    display: grid;
+    gap: 10px;
+}
+
+.message-compact-card {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fbfcfb;
+    padding: 12px 14px;
+}
+
+.message-compact-card.is-muted {
+    opacity: 0.92;
+}
+
+.message-compact-meta {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.message-compact-meta strong {
+    display: block;
+    font-size: 0.95rem;
+}
+
+.message-compact-meta small {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.message-compact-card p {
+    margin: 8px 0 0;
+    color: var(--ink);
+    line-height: 1.45;
+}
+
+.message-archive {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 12px 14px;
+}
+
+.message-archive summary {
+    cursor: pointer;
+    font-weight: 900;
+    color: var(--ink);
+    list-style: none;
+}
+
+.message-archive summary::-webkit-details-marker {
+    display: none;
+}
+
+.archive-list {
+    margin-top: 12px;
 }
 
 .progress-track {
@@ -754,7 +884,8 @@ a {
     width: min(calc(100% - 24px), 520px);
     transform: translateX(-50%);
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(78px, 1fr);
     gap: 6px;
     padding: 7px;
     border: 1px solid rgba(219, 227, 221, 0.92);
@@ -762,22 +893,52 @@ a {
     background: rgba(255, 255, 255, 0.92);
     box-shadow: 0 18px 42px rgba(16, 40, 32, 0.18);
     backdrop-filter: blur(14px);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.mobile-dock::-webkit-scrollbar {
+    display: none;
 }
 
 .mobile-dock a {
     display: grid;
-    place-items: center;
+    justify-items: center;
+    align-content: center;
     min-height: 42px;
     border-radius: 12px;
     color: var(--ink);
     text-decoration: none;
     font-size: 0.78rem;
     font-weight: 900;
+    padding: 6px 8px;
+    position: relative;
 }
 
 .mobile-dock a:focus,
 .mobile-dock a:hover {
     background: #eef2f7;
+}
+
+.mobile-dock a.is-active {
+    background: #102820;
+    color: #ffffff;
+}
+
+.mobile-dock a em {
+    position: absolute;
+    top: 3px;
+    right: 6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #102820;
+    font-size: 0.65rem;
+    font-style: normal;
+    line-height: 18px;
+    text-align: center;
 }
 
 .copy-toast {
@@ -827,7 +988,8 @@ a {
     }
 
     .logout-button,
-    .install-button {
+    .install-button,
+    .refresh-button {
         flex: 1 1 100%;
     }
 
@@ -841,6 +1003,10 @@ a {
     }
 
     .detail-list {
+        grid-template-columns: 1fr;
+    }
+
+    .message-summary-grid {
         grid-template-columns: 1fr;
     }
 
