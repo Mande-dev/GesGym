@@ -33,6 +33,10 @@
                     <span aria-hidden="true">+</span>
                     Installer l'app
                 </button>
+                <a class="security-button" href="{% url 'members:member_portal' %}?tab=home#security">
+                    <span aria-hidden="true">&#128274;</span>
+                    Mot de passe
+                </a>
                 <button type="button" class="refresh-button" id="refreshAppBtn" aria-label="Actualiser la page">
                     <span aria-hidden="true">&#8635;</span>
                     Actualiser
@@ -51,7 +55,10 @@
                         {% if member.photo %}
                             <img src="{{ member.photo.url }}" alt="{{ member.first_name }} {{ member.last_name }}">
                         {% else %}
-                            <span>{{ member.first_name|slice:":1" }}{{ member.last_name|slice:":1" }}</span>
+                            <div class="avatar-placeholder" aria-hidden="true">
+                                <span class="avatar-head"></span>
+                                <span class="avatar-body"></span>
+                            </div>
                         {% endif %}
                     </div>
                     <div>
@@ -101,7 +108,7 @@
                 </article>
             </section>
 
-            <section class="content-panel">
+            <section class="content-panel" id="security">
                 <div class="section-heading">
                     <div>
                         <p class="eyebrow">Securite</p>

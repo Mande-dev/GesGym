@@ -215,6 +215,7 @@ class MemberPortalTests(TestCase):
         self.assertContains(response, "Mon accompagnement")
         self.assertContains(response, "Derniers acces")
         self.assertContains(response, "Changer mon mot de passe")
+        self.assertContains(response, "Mot de passe")
         self.assertContains(response, f"MEM-{self.member.id:05d}")
         self.assertContains(response, self.member.user.username)
         self.assertContains(response, reverse("members:member_portal_qr"))
