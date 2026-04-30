@@ -214,6 +214,7 @@ class MemberPortalTests(TestCase):
         self.assertContains(response, "Carte membre")
         self.assertContains(response, "Mon accompagnement")
         self.assertContains(response, "Derniers acces")
+        self.assertContains(response, "Changer mon mot de passe")
         self.assertContains(response, f"MEM-{self.member.id:05d}")
         self.assertContains(response, self.member.user.username)
         self.assertContains(response, reverse("members:member_portal_qr"))
@@ -307,6 +308,37 @@ class MemberPortalTests(TestCase):
         self.assertContains(response, "Prioritaires")
         self.assertContains(response, "Recents")
         self.assertContains(response, "1 non lu")
+
+    def test_member_can_change_password_from_portal(self):
+        self.client.force_login(self.member.user)
+
+        response = self.client.post(
+            reverse("members:member_change_password"),
+            {
+                "old_password": "12345",
+                "new_password1": "NouveauPass123!",
+                "new_password2": "NouveauPass123!",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], f"{reverse('members:member_portal')}?tab=home")
+        self.member.user.refresh_from_db()
+        self.assertTrue(self.member.user.check_password("NouveauPass123!"))
+
+        self.client.logout()
+        login_response = self.client.post(
+            reverse("compte:login"),
+            {
+                "username": self.member.user.username,
+                "password": "NouveauPass123!",
+            },
+        )
+        self.assertRedirects(
+            login_response,
+            reverse("members:member_portal"),
+            fetch_redirect_response=False,
+        )
 
     def test_member_portal_qr_is_limited_to_authenticated_member(self):
         anonymous_response = self.client.get(reverse("members:member_portal_qr"))

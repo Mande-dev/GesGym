@@ -4,6 +4,8 @@ from io import BytesIO
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -165,6 +167,8 @@ def member_portal(request):
             }
         )
 
+    password_form = PasswordChangeForm(user=request.user)
+
     context = {
         "member": member,
         "member_code": _member_code(member),
@@ -196,10 +200,31 @@ def member_portal(request):
         "status_label": _status_label(status),
         "status_class": _status_class(status),
         "days_remaining": member.days_remaining,
+        "password_form": password_form,
         "pwa_manifest_url": reverse("members:member_app_manifest"),
         "pwa_service_worker_url": reverse("members:member_app_service_worker"),
     }
     return render(request, "members/member_portal.html", context)
+
+
+@login_required
+@require_POST
+def member_change_password(request):
+    current_member = _get_current_member(request.user)
+    if not current_member:
+        raise PermissionDenied
+
+    form = PasswordChangeForm(user=request.user, data=request.POST)
+    if form.is_valid():
+        user = form.save()
+        update_session_auth_hash(request, user)
+        messages.success(request, "Votre mot de passe a ete mis a jour.")
+    else:
+        for field_errors in form.errors.values():
+            for error in field_errors:
+                messages.error(request, error)
+
+    return redirect(f"{reverse('members:member_portal')}?tab=home")
 
 
 @login_required

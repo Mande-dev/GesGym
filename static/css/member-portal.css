@@ -163,6 +163,35 @@ a {
     box-shadow: var(--shadow);
 }
 
+.member-password-form {
+    display: grid;
+    gap: 14px;
+}
+
+.form-field {
+    display: grid;
+    gap: 8px;
+}
+
+.form-field span {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.form-field input {
+    width: 100%;
+    min-height: 48px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #fff;
+    color: var(--ink);
+    padding: 0 14px;
+    font: inherit;
+}
+
 .hero-panel {
     position: relative;
     overflow: hidden;

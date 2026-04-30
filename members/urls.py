@@ -6,6 +6,7 @@ from .views import (
     edit_member,
     member_app_manifest,
     member_app_service_worker,
+    member_change_password,
     member_detail,
     member_portal,
     member_notification_read,
@@ -27,6 +28,7 @@ app_name = "members"
 urlpatterns = [
     path("", member_list, name="member_list"),
     path("me/", member_portal, name="member_portal"),
+    path("me/change-password/", member_change_password, name="member_change_password"),
     path("me/messages/<int:notification_id>/read/", member_notification_read, name="member_notification_read"),
     path("me/qr/", member_portal_qr, name="member_portal_qr"),
     path("me/subscription-request/", member_subscription_request, name="member_subscription_request"),
