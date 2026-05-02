@@ -109,9 +109,23 @@ L'ecran de connexion demande:
 
 Apres connexion:
 
+- un ecran de bienvenue anime s'affiche pendant un court instant
 - un administrateur SaaS est redirige vers l'administration
 - un owner est redirige vers le choix de la salle ou directement vers un dashboard
 - un employe interne est redirige selon son role et les modules actifs
+- un membre est redirige vers son espace mobile dedie
+
+### 4.1.1 Ecran de bienvenue apres connexion
+
+Apres authentification reussie, l'application affiche un splash screen premium tres court avant d'ouvrir l'espace de travail.
+
+Le contenu depend du profil:
+
+- owner: nom de l'organisation
+- utilisateur interne: nom de l'organisation + salle active
+- membre: nom de l'organisation ou de la salle selon le contexte
+
+Si l'organisation possede un logo, il est affiche sur cet ecran.
 
 ### 4.2 Cas du proprietaire avec plusieurs salles
 
@@ -168,6 +182,12 @@ Le menu lateral peut contenir les sections suivantes:
 - Stock & produits
 - Parametres
 - Mon profil
+
+Remarques utiles:
+
+- `Mon profil` et `Deconnexion` sont places en bas du menu lateral pour rester faciles a retrouver
+- l'etat reduit/etendu du menu lateral est memorise sur le poste
+- la navigation visible reste dependante du role et des modules actifs
 
 ### 5.1 Tableau de bord
 
@@ -275,6 +295,43 @@ La fiche detaillee permet de voir:
 - la date d'expiration
 - les paiements recents
 - les acces recents
+
+### 6.1.4 bis Espace membre mobile (PWA)
+
+Lorsqu'un membre se connecte avec son propre compte, il accede a un espace mobile dedie, distinct de l'interface staff.
+
+Cet espace propose:
+
+- un ecran d'accueil avec carte membre, QR code, coach et acces recents
+- un onglet `Messages`
+- un onglet `Abonnement`
+- un onglet `Formules`
+
+Fonctions importantes:
+
+- installation PWA via le bouton `Installer l'app` quand disponible
+- bouton `Actualiser` integre pour recharger la page meme en mode applique installee
+- bouton `Mot de passe` pour acceder rapidement au changement de mot de passe
+- bouton `Deconnexion`
+
+Dans l'onglet `Messages`, le membre voit:
+
+- les messages non lus en priorite
+- les messages recents lus en version compacte
+- des archives recentes repliables
+
+Dans l'onglet `Abonnement`, le membre voit:
+
+- sa formule active
+- les jours restants
+- ses dernieres operations de paiement
+
+Dans l'onglet `Formules`, le membre peut:
+
+- consulter les formules disponibles
+- envoyer une demande de souscription
+
+Le changement de mot de passe est disponible directement depuis l'accueil de l'espace membre, dans le bloc `Securite`.
 
 ### 6.1.5 Modifier un membre
 
@@ -399,6 +456,16 @@ La page des formules donne aussi une vision rapide de:
 - nombre d'abonnements actifs
 - abonnements a renouvellement auto
 - abonnements proches de l'expiration
+
+### 6.3.5 Demandes envoyees depuis l'espace membre
+
+Un membre peut envoyer une demande de souscription depuis son espace mobile.
+
+Dans ce cas:
+
+- la demande est enregistree comme demande en attente
+- elle n'active pas automatiquement la formule
+- elle pourra ensuite etre traitee dans le circuit prevu par la salle
 
 ## 6.4 Module Paiements / Point de vente (POS)
 
@@ -549,6 +616,11 @@ Les motifs de refus les plus probables sont:
 - membre suspendu
 - aucun abonnement actif
 - membre deja dans la salle pour la journee
+
+Dans l'espace membre mobile, l'historique d'acces recent est volontairement compact:
+
+- seuls les acces les plus recents sont visibles immediatement
+- le reste est range dans un bloc `Voir plus d'acces`
 
 ## 6.6 Module Rapports
 
@@ -884,6 +956,47 @@ Le journal sensible conserve les actions importantes, par exemple:
 
 Ce journal sert a l'audit interne.
 
+## 6.12 Module Messages membres
+
+### 6.12.1 Objectif
+
+Le module `Messages membres` permet a la salle d'envoyer des messages visibles directement dans l'espace mobile des membres.
+
+### 6.12.2 Audiences disponibles
+
+L'envoi peut viser:
+
+- un membre precis
+- tous les membres
+- les membres actifs
+- les membres expires
+- les membres proches de l'expiration
+- les membres suspendus
+- les membres sans abonnement
+
+### 6.12.3 Historique des campagnes
+
+L'historique n'affiche pas une ligne par destinataire.
+
+Il est organise par campagne d'envoi, avec pour chaque message:
+
+- le titre
+- le contenu
+- la date/heure d'envoi
+- l'auteur de l'envoi
+- le nombre total de membres touches
+- le nombre de lectures
+- le nombre de non lus
+
+Des blocs repliables permettent ensuite de voir:
+
+- les premiers destinataires
+- les autres destinataires si la campagne est volumineuse
+- les membres qui ont lu
+- les membres qui n'ont pas encore lu
+
+Cette presentation evite qu'un envoi global transforme l'historique en liste interminable.
+
 ## 7. Regles metier importantes
 
 Voici les regles les plus importantes a connaitre pour bien utiliser GesGym.
@@ -911,6 +1024,12 @@ Voici les regles les plus importantes a connaitre pour bien utiliser GesGym.
 - Une seule caisse ouverte par salle.
 - Le taux USD-CDF est obligatoire pour ouvrir une caisse.
 - Aucun paiement sans caisse ouverte.
+
+### 7.4 bis Regles sur les messages membres
+
+- un message in-app est rattache a la salle active
+- un historique de campagne doit permettre de distinguer lus et non lus
+- les messages membres ne remplacent pas encore un systeme email/SMS externe
 
 ### 7.5 Regles sur les produits
 
@@ -1044,6 +1163,32 @@ Verifier:
 
 Un owner ou un manager selon le contexte peut reinitialiser le mot de passe sur `12345`, puis l'utilisateur devra le changer apres connexion.
 
+### 9.11 "Le bouton Installer l'app n'apparait pas"
+
+Le bouton PWA n'apparait que si le navigateur propose effectivement l'installation.
+
+Verifier:
+
+- que le membre utilise un navigateur compatible
+- que la page est chargee correctement
+- que le navigateur n'a pas deja installe l'application
+
+### 9.12 "Je n'arrive pas a actualiser l'application membre installee"
+
+En mode PWA, les boutons du navigateur peuvent disparaitre.
+
+Utiliser le bouton `Actualiser` integre dans l'espace membre.
+
+### 9.13 "Pourquoi l'historique des messages salle n'affiche pas une ligne par membre ?"
+
+C'est volontaire.
+
+L'historique est groupe par campagne pour:
+
+- rester lisible
+- montrer les compteurs globaux
+- permettre d'ouvrir uniquement le detail des lus/non lus si necessaire
+
 ## 10. Glossaire
 
 - **Organisation**: entite cliente qui possede une ou plusieurs salles.
@@ -1077,4 +1222,3 @@ Ce manuel peut servir de base de formation pour:
 - reception
 - cashier
 - personnel RH
-
