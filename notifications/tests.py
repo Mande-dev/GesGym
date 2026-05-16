@@ -7,7 +7,7 @@ from django.utils import timezone
 from compte.models import User, UserGymRole
 from members.models import Member
 from notifications.models import Notification
-from organizations.models import Gym, GymModule, Module, Organization
+from organizations.models import Gym, GymModule, Module, Organization, SensitiveActivityLog
 from subscriptions.models import MemberSubscription, SubscriptionPlan
 
 
@@ -97,6 +97,12 @@ class InAppNotificationDashboardTests(TestCase):
         self.assertEqual(notification.status, Notification.STATUS_SENT)
         self.assertEqual(notification.sent_by, self.owner)
         self.assertIsNotNone(notification.sent_at)
+        self.assertTrue(
+            SensitiveActivityLog.objects.filter(
+                organization=self.organization,
+                action="notification.batch_sent",
+            ).exists()
+        )
 
     def test_dashboard_can_send_to_active_members_only(self):
         self.client.force_login(self.owner)

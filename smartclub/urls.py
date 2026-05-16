@@ -21,6 +21,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.http import HttpResponse
 from django.views.generic import RedirectView
+from core.views import health_details
 from notifications.views import notification_dashboard
 from website.views import landing
 
@@ -28,6 +29,7 @@ from website.views import landing
 urlpatterns = [
     path('', landing, name='landing'),
     path('health/', lambda request: HttpResponse("ok", content_type="text/plain"), name='health'),
+    path('health/details/', health_details, name='health_details'),
     path('login/', RedirectView.as_view(pattern_name='compte:login', permanent=False), name='login'),
     path('admin/', admin.site.urls),
     path('compte/', include('compte.urls')),

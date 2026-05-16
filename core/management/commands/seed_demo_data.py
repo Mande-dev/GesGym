@@ -363,12 +363,6 @@ class Command(BaseCommand):
             user.set_password(DEMO_PASSWORD)
             user.save()
 
-        UserGymRole.objects.update_or_create(
-            user=user,
-            gym=member.gym,
-            defaults={"role": "accountant", "is_active": True},
-        )
-
     def _seed_pos(self, gym, cashier):
         today = timezone.localdate()
         rate = Decimal("2850.00") if "Gombe" in gym.name else Decimal("2840.00")

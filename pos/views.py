@@ -12,7 +12,8 @@ from members.models import Member
 from products.models import Product
 from subscriptions.models import SubscriptionPlan
 from smartclub.access_control import POS_CASHIER_ROLES, POS_HISTORY_ROLES
-from smartclub.decorators import role_required
+from smartclub.decorators import module_required, role_required
+from core.audit import log_sensitive_action
 
 from .models import CashRegister, ExchangeRate, Payment
 from .services import record_expense, record_product_sale, record_subscription_payment
@@ -31,6 +32,7 @@ def _validation_message(exc):
 
 @login_required
 @role_required(POS_CASHIER_ROLES)
+@module_required("POS")
 def search_members(request):
     query = request.GET.get("q", "")
     members = Member.objects.filter(gym=request.gym).filter(
@@ -55,6 +57,7 @@ def search_members(request):
 
 @login_required
 @role_required(POS_CASHIER_ROLES)
+@module_required("POS")
 def cashier_dashboard(request):
     gym = request.gym
     register = CashRegister.objects.filter(gym=gym, is_closed=False).first()
@@ -90,6 +93,13 @@ def cashier_dashboard(request):
                     source_app="pos",
                     source_model="ManualExpense",
                 )
+                log_sensitive_action(
+                    request,
+                    "pos.expense_recorded",
+                    "CashRegister",
+                    register.session_code or f"register-{register.id}",
+                    metadata={"amount_cdf": str(amount_cdf), "method": "cash"},
+                )
             except ValidationError as exc:
                 messages.error(request, _validation_message(exc))
                 return redirect("pos:cashier_dashboard")
@@ -119,6 +129,18 @@ def cashier_dashboard(request):
                     method=method,
                     created_by=request.user,
                 )
+                log_sensitive_action(
+                    request,
+                    "pos.product_sale_recorded",
+                    "Product",
+                    product.name,
+                    metadata={
+                        "payment_id": payment.id,
+                        "product_id": product.id,
+                        "currency": payment.currency,
+                        "amount": str(payment.amount),
+                    },
+                )
                 messages.success(
                     request,
                     f"Vente produit enregistree: {payment.amount} {payment.currency}.",
@@ -133,6 +155,18 @@ def cashier_dashboard(request):
                     currency=currency,
                     method=method,
                     created_by=request.user,
+                )
+                log_sensitive_action(
+                    request,
+                    "pos.subscription_payment_recorded",
+                    "Member",
+                    f"{member.first_name} {member.last_name}".strip(),
+                    metadata={
+                        "payment_id": payment.id,
+                        "plan_id": plan.id,
+                        "currency": payment.currency,
+                        "amount": str(payment.amount),
+                    },
                 )
                 messages.success(
                     request,
@@ -183,6 +217,7 @@ def cashier_dashboard(request):
 
 @login_required
 @role_required(POS_CASHIER_ROLES)
+@module_required("POS")
 def open_register(request):
     if request.method != "POST":
         return redirect("pos:cashier_dashboard")
@@ -209,11 +244,21 @@ def open_register(request):
             date=timezone.localdate(),
             defaults={"rate": exchange_rate},
         )
-        CashRegister.objects.create(
+        register = CashRegister.objects.create(
             gym=request.gym,
             opened_by=request.user,
             opening_amount=opening_amount,
             exchange_rate=exchange_rate,
+        )
+        log_sensitive_action(
+            request,
+            "pos.register_opened",
+            "CashRegister",
+            register.session_code or f"register-{register.id}",
+            metadata={
+                "opening_amount": str(opening_amount),
+                "exchange_rate": str(exchange_rate),
+            },
         )
     except ValidationError as exc:
         messages.error(request, _validation_message(exc))
@@ -225,6 +270,7 @@ def open_register(request):
 
 @login_required
 @role_required(POS_CASHIER_ROLES)
+@module_required("POS")
 def close_register(request, register_id):
     register = get_object_or_404(
         CashRegister,
@@ -253,6 +299,16 @@ def close_register(request, register_id):
         register.is_closed = True
         register.difference = difference
         register.save()
+        log_sensitive_action(
+            request,
+            "pos.register_closed",
+            "CashRegister",
+            register.session_code or f"register-{register.id}",
+            metadata={
+                "real_amount": str(real_amount),
+                "difference": str(difference),
+            },
+        )
 
         messages.success(request, f"Caisse fermee. Difference : {difference} CDF")
         return redirect("pos:cashier_dashboard")
@@ -271,6 +327,7 @@ def close_register(request, register_id):
 
 @login_required
 @role_required(POS_HISTORY_ROLES)
+@module_required("POS")
 def register_history(request):
     registers = CashRegister.objects.filter(gym=request.gym, is_closed=True)
 
@@ -327,6 +384,7 @@ def register_history(request):
 
 @login_required
 @role_required(POS_HISTORY_ROLES)
+@module_required("POS")
 def register_detail(request, register_id):
     register = get_object_or_404(CashRegister, id=register_id, gym=request.gym)
     payments = (

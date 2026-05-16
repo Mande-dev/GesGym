@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from compte.models import User, UserGymRole
 from members.models import Member
-from organizations.models import Gym, Organization
+from organizations.models import Gym, GymModule, Module, Organization
 from subscriptions.models import MemberSubscription, SubscriptionPlan
 from .models import AccessLog
 from .views import DOUBLE_SCAN_REASON
@@ -33,6 +33,8 @@ class AccessControlTests(TestCase):
             username="reception-a",
             password="test-pass",
         )
+        access_module, _ = Module.objects.get_or_create(code="ACCESS", defaults={"name": "Access"})
+        GymModule.objects.get_or_create(gym=self.gym_a, module=access_module, defaults={"is_active": True})
         UserGymRole.objects.create(
             user=self.user,
             gym=self.gym_a,
@@ -254,3 +256,10 @@ class AccessControlTests(TestCase):
         payload = response.json()
         self.assertEqual(len(payload), 1)
         self.assertEqual(payload[0]["member"], "Alice Access")
+
+    def test_access_dashboard_requires_active_module(self):
+        GymModule.objects.filter(gym=self.gym_a, module__code="ACCESS").update(is_active=False)
+
+        response = self.client.get(reverse("access:acces_dashboard"))
+
+        self.assertEqual(response.status_code, 403)

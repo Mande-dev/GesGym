@@ -48,3 +48,13 @@ class PublicRouteTests(TestCase):
         response = self.client.get("/")
 
         self.assertTemplateUsed(response, "compte/accueil.html")
+
+    def test_health_details_route_returns_json_with_database_and_tenancy(self):
+        response = self.client.get("/health/details/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json")
+        payload = response.json()
+        self.assertEqual(payload["status"], "ok")
+        self.assertIn("database", payload)
+        self.assertIn("tenancy", payload)

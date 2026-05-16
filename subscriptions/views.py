@@ -9,7 +9,9 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
+from core.audit import log_sensitive_action
 from smartclub.access_control import SUBSCRIPTION_ROLES, has_role
+from smartclub.decorators import module_required
 
 from .forms import MemberSubscriptionForm, SubscriptionPlanForm
 from .models import MemberSubscription, SubscriptionPlan
@@ -69,21 +71,18 @@ def _plan_list_context(request, form=None):
     }
 
 
-
 def create_member_subscription(member, plan, start_date=None, auto_renew=False):
     if member.gym_id != plan.gym_id:
         raise PermissionDenied("Le membre et la formule doivent appartenir au meme gym.")
 
     start_date = start_date or timezone.now().date()
-
     end_date = start_date + timedelta(days=plan.duration_days)
 
-    # désactiver anciennes subscriptions
     with transaction.atomic():
         MemberSubscription.objects.filter(
             gym=member.gym,
             member=member,
-            is_active=True
+            is_active=True,
         ).update(is_active=False)
 
         subscription = MemberSubscription.objects.create(
@@ -93,23 +92,21 @@ def create_member_subscription(member, plan, start_date=None, auto_renew=False):
             start_date=start_date,
             end_date=end_date,
             auto_renew=auto_renew,
-            is_active=True
+            is_active=True,
         )
 
     return subscription
 
 
 @login_required
+@module_required("SUBSCRIPTIONS")
 def plan_list(request):
     _require_gym_role(request, PLAN_MANAGEMENT_ROLES)
+    return render(request, "subscriptions/subscription_plan_list.html", _plan_list_context(request))
 
-    return render(
-        request,
-        "subscriptions/subscription_plan_list.html",
-        _plan_list_context(request)
-    )
 
 @login_required
+@module_required("SUBSCRIPTIONS")
 def create_plan(request):
     _require_gym_role(request, PLAN_MANAGEMENT_ROLES)
 
@@ -120,112 +117,119 @@ def create_plan(request):
             plan.gym = request.gym
             try:
                 plan.save()
+                log_sensitive_action(
+                    request,
+                    "subscription.plan_created",
+                    "SubscriptionPlan",
+                    plan.name,
+                    metadata={"plan_id": plan.id, "price": str(plan.price)},
+                )
             except IntegrityError:
                 if _wants_json(request):
-                    return JsonResponse({
-                        "success": False,
-                        "errors": {"name": ["Une formule avec ce nom existe deja dans ce gym."]},
-                    }, status=400)
+                    return JsonResponse(
+                        {
+                            "success": False,
+                            "errors": {"name": ["Une formule avec ce nom existe deja dans ce gym."]},
+                        },
+                        status=400,
+                    )
                 messages.error(request, "Une formule avec ce nom existe deja dans ce gym.")
                 return redirect("subscriptions:subscription_plan_list")
-            messages.success(request,"Plan créé avec succès")
 
+            messages.success(request, "Formule creee avec succes.")
             if _wants_json(request):
-                return JsonResponse({
-                    "success": True,
-                    "message": "Formule creee avec succes.",
-                })
-
+                return JsonResponse({"success": True, "message": "Formule creee avec succes."})
             return redirect("subscriptions:subscription_plan_list")
 
         if _wants_json(request):
-            return JsonResponse({
-                "success": False,
-                "errors": form.errors,
-            }, status=400)
-
+            return JsonResponse({"success": False, "errors": form.errors}, status=400)
     else:
         form = SubscriptionPlanForm(gym=request.gym)
 
-    return render(request,"subscriptions/subscription_plan_list.html",_plan_list_context(request, form=form))
+    return render(request, "subscriptions/subscription_plan_list.html", _plan_list_context(request, form=form))
 
 
 @login_required
+@module_required("SUBSCRIPTIONS")
 def edit_plan(request, plan_id):
     _require_gym_role(request, PLAN_MANAGEMENT_ROLES)
-
-    plan = get_object_or_404(
-        SubscriptionPlan,
-        id=plan_id,
-        gym=request.gym
-    )
+    plan = get_object_or_404(SubscriptionPlan, id=plan_id, gym=request.gym)
 
     if request.method == "POST":
         form = SubscriptionPlanForm(request.POST, instance=plan, gym=request.gym)
-
         if form.is_valid():
             try:
                 form.save()
-                return JsonResponse({
-                    'success': True,
-                    'message': 'Formule modifiée avec succès.'
-                })
+                log_sensitive_action(
+                    request,
+                    "subscription.plan_updated",
+                    "SubscriptionPlan",
+                    plan.name,
+                    metadata={"plan_id": plan.id},
+                )
+                return JsonResponse({"success": True, "message": "Formule modifiee avec succes."})
             except IntegrityError:
-                return JsonResponse({
-                    'success': False,
-                    'errors': {'name': ['Une formule avec ce nom existe déjà dans ce gym.']}
-                }, status=400)
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "errors": {"name": ["Une formule avec ce nom existe deja dans ce gym."]},
+                    },
+                    status=400,
+                )
 
-        # Erreurs de validation classiques
-        return JsonResponse({
-            'success': False,
-            'errors': form.errors
-        }, status=400)
+        return JsonResponse({"success": False, "errors": form.errors}, status=400)
 
-    # GET : données pour pré-remplir le modal
-    data = {
-        'id': plan.id,
-        'name': plan.name,
-        'duration_days': plan.duration_days,
-        'price': float(plan.price),
-        'description': plan.description or "",
-        'is_active': plan.is_active,
-    }
-
-    return JsonResponse(data)
-
-@login_required
-def delete_plan(request, plan_id):
-    _require_gym_role(request, PLAN_MANAGEMENT_ROLES)
-
-    plan = get_object_or_404(
-        SubscriptionPlan,
-        id=plan_id,
-        gym=request.gym
+    return JsonResponse(
+        {
+            "id": plan.id,
+            "name": plan.name,
+            "duration_days": plan.duration_days,
+            "price": float(plan.price),
+            "description": plan.description or "",
+            "is_active": plan.is_active,
+        }
     )
 
-    if request.method == "POST":
-        has_history = MemberSubscription.objects.filter(
-            gym=request.gym,
-            plan=plan,
-        ).exists()
 
+@login_required
+@module_required("SUBSCRIPTIONS")
+def delete_plan(request, plan_id):
+    _require_gym_role(request, PLAN_MANAGEMENT_ROLES)
+    plan = get_object_or_404(SubscriptionPlan, id=plan_id, gym=request.gym)
+
+    if request.method == "POST":
+        has_history = MemberSubscription.objects.filter(gym=request.gym, plan=plan).exists()
         if has_history:
             plan.is_active = False
             plan.save(update_fields=["is_active"])
-            messages.success(request,"Plan desactive pour conserver l'historique.")
+            log_sensitive_action(
+                request,
+                "subscription.plan_deactivated",
+                "SubscriptionPlan",
+                plan.name,
+                metadata={"plan_id": plan.id},
+            )
+            messages.success(request, "Formule desactivee pour conserver l'historique.")
             return redirect("subscriptions:subscription_plan_list")
-        else:
-            plan.delete()
-            messages.success(request,"Plan supprime")
-            return redirect("subscriptions:subscription_plan_list")
-        messages.success(request,"Plan supprimé")
+
+        plan_name = plan.name
+        plan_id_value = plan.id
+        plan.delete()
+        log_sensitive_action(
+            request,
+            "subscription.plan_deleted",
+            "SubscriptionPlan",
+            plan_name,
+            metadata={"plan_id": plan_id_value},
+        )
+        messages.success(request, "Formule supprimee.")
         return redirect("subscriptions:subscription_plan_list")
 
     return redirect("subscriptions:subscription_plan_list")
 
 
 @login_required
+@module_required("SUBSCRIPTIONS")
 def create_subscription(request):
     _require_gym_role(request, SUBSCRIPTION_MANAGEMENT_ROLES)
 
@@ -235,32 +239,29 @@ def create_subscription(request):
             subscription = form.save(commit=False)
             plan = subscription.plan
             subscription.gym = request.gym
-            subscription.end_date = (
-                subscription.start_date
-                + timedelta(days=plan.duration_days)
-            )
-            # désactiver abonnement actif
+            subscription.end_date = subscription.start_date + timedelta(days=plan.duration_days)
+
             with transaction.atomic():
                 MemberSubscription.objects.filter(
                     gym=request.gym,
                     member=subscription.member,
-                    is_active=True
+                    is_active=True,
                 ).update(is_active=False)
-
                 subscription.save()
+                log_sensitive_action(
+                    request,
+                    "subscription.created",
+                    "MemberSubscription",
+                    f"{subscription.member.first_name} {subscription.member.last_name}".strip(),
+                    metadata={
+                        "subscription_id": subscription.id,
+                        "plan_id": subscription.plan_id,
+                    },
+                )
 
-            messages.success(
-                request,
-                "Abonnement enregistré avec succès"
-            )
-
+            messages.success(request, "Abonnement enregistre avec succes.")
             return redirect("members:member_list")
-
     else:
         form = MemberSubscriptionForm(gym=request.gym)
 
-    return render(
-        request,
-        "subscriptions/create_subscription.html",
-        {"form": form}
-    )
+    return render(request, "subscriptions/create_subscription.html", {"form": form})

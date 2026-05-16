@@ -34,6 +34,12 @@
                                 Vue d'ensemble
                             </a>
                         </li>
+                        <li class="nxl-item" id="nav-dashboard-analytics">
+                            <a class="nxl-link"
+                                href="{% url 'core:gym_dashboard' gym_id=request.gym.id %}?view=analytics">
+                                Vue analytique
+                            </a>
+                        </li>
                         {% else %}
                         <!-- Si pas de gym (cas de l'Owner sur vue organisation) -->
                         <li class="nxl-item" id="nav-dashboard-global">
@@ -100,17 +106,17 @@
                 <li class="nxl-item nxl-hasmenu {% if nav_active == 'paiements' %}active{% endif %}">
                     <a href="javascript:void(0);" class="nxl-link">
                         <span class="nxl-micon"><span class="material-icons">payments</span></span>
-                        <span class="nxl-mtext">Paiements</span>
+                        <span class="nxl-mtext">Caisse & paiements</span>
                         <span class="nxl-arrow"><span class="material-icons">chevron_right</span></span>
                     </a>
                     <ul class="nxl-submenu">
                         {% if can_pos_cashier %}
                         <li class="nxl-item" id="nav-paiements-caisse"><a class="nxl-link"
-                                href="{% url 'pos:cashier_dashboard' %}">Point de vente</a></li>
+                                href="{% url 'pos:cashier_dashboard' %}">Caisse du jour</a></li>
                         {% endif %}
                         {% if can_pos_history %}
                         <li class="nxl-item" id="nav-paiements-journal"><a class="nxl-link"
-                                href="{% url 'pos:register_history' %}">Journal des transactions</a></li>
+                                href="{% url 'pos:register_history' %}">Historique de caisse</a></li>
                         {% endif %}
 
                     </ul>

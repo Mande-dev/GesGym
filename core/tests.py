@@ -12,7 +12,9 @@ from compte.models import User
 from compte.models import UserGymRole
 from coaching.forms import CoachForm
 from coaching.models import CoachSpecialty
+from compte.forms import CreateUserForm
 from members.models import Member
+from .forms import InternalEmployeeForm
 from organizations.models import Gym, GymModule, Module, Organization, SensitiveActivityLog
 from pos.models import CashRegister, Payment
 
@@ -362,6 +364,48 @@ class RoleAccessMatrixTests(TestCase):
         self.assertEqual(access_response.status_code, 200)
         self.assertEqual(report_response.status_code, 403)
 
+    def test_cashier_navigation_only_exposes_cashier_scope(self):
+        self.client.force_login(self.cashier)
+
+        response = self.client.get(reverse("pos:cashier_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+        self.assertIn("Caisse & paiements", content)
+        self.assertIn('href="/pos/"', content)
+        self.assertNotIn('href="/gym/1/dashboard/?view=analytics"', content)
+        self.assertNotIn('href="/rapport/?section=journalier"', content)
+        self.assertNotIn('href="/parametres/?tab=employees"', content)
+        self.assertNotIn('href="/access/access-dashboard/?section=scan"', content)
+
+    def test_reception_navigation_exposes_access_and_operational_tools_only(self):
+        self.client.force_login(self.reception)
+
+        response = self.client.get(reverse("access:acces_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+        self.assertIn("Membres", content)
+        self.assertIn("Caisse & paiements", content)
+        self.assertIn('href="/access/access-dashboard/?section=scan"', content)
+        self.assertIn('href="/pos/"', content)
+        self.assertNotIn('href="/gym/1/dashboard/?view=analytics"', content)
+        self.assertNotIn('href="/rapport/?section=journalier"', content)
+        self.assertNotIn('href="/parametres/?tab=employees"', content)
+        self.assertNotIn('href="/pos/register-history/"', content)
+
+    def test_manager_navigation_exposes_dashboard_reports_and_settings(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.get(reverse("core:gym_dashboard", args=[self.gym.id]))
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+        self.assertIn('href="/gym/1/dashboard/?view=analytics"', content)
+        self.assertIn('href="/rapport/?section=journalier"', content)
+        self.assertIn('href="/parametres/?tab=employees"', content)
+        self.assertIn('href="/pos/register-history/"', content)
+
     def test_manager_settings_excludes_organization_management(self):
         self.client.force_login(self.manager)
 
@@ -390,3 +434,28 @@ class RoleAccessMatrixTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertFalse(UserGymRole.objects.filter(user__email="bad-scope@example.com").exists())
+
+    def test_non_owner_cannot_open_dashboard_for_other_gym_than_request_context(self):
+        UserGymRole.objects.create(user=self.manager, gym=self.other_gym, role="manager")
+        self.client.force_login(self.manager)
+
+        response = self.client.get(reverse("core:gym_dashboard", args=[self.other_gym.id]))
+
+        self.assertEqual(response.status_code, 403)
+
+
+class RoleChoiceCleanupTests(TestCase):
+    def test_internal_employee_form_excludes_accountant_role(self):
+        form = InternalEmployeeForm()
+
+        role_values = [value for value, _label in form.fields["role"].choices]
+
+        self.assertNotIn("accountant", role_values)
+        self.assertNotIn("owner", role_values)
+
+    def test_owner_create_user_form_excludes_accountant_role(self):
+        form = CreateUserForm()
+
+        role_values = [value for value, _label in form.fields["role"].choices]
+
+        self.assertNotIn("accountant", role_values)

@@ -70,7 +70,6 @@ class CreateUserForm(forms.Form):
         ('coach', 'Coach'),
         ('reception', 'Réceptionniste'),
         ('cashier', 'Caissier'),
-        ('accountant', 'Comptable'),
     )
     role = forms.ChoiceField(choices=ROLE_CHOICES, widget=forms.Select(attrs={'class': 'form-control'}))
 

@@ -249,6 +249,24 @@
     height: 13px;
 }
 
+.request-trace-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 999px;
+    background: #ffffff;
+    color: #64748b;
+    font-size: .76rem;
+    font-weight: 700;
+}
+
+.request-trace-chip .material-icons {
+    font-size: 17px;
+    color: #3454d1;
+}
+
 @media (max-width: 991.98px) {
     .owner-gym-switcher__button {
         min-width: 210px;
@@ -356,6 +374,13 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
+
+            {% if request.request_id %}
+            <span class="request-trace-chip" title="Identifiant de trace support">
+                <span class="material-icons">support_agent</span>
+                REF {{ request.request_id|slice:":8"|upper }}
+            </span>
             {% endif %}
 
             <!-- Notifications -->

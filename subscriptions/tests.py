@@ -1,11 +1,14 @@
 from datetime import timedelta
 
+from django.contrib.messages import get_messages
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
+from compte.models import User
 from members.models import Member
-from organizations.models import Gym, Organization
+from organizations.models import Gym, GymModule, Module, Organization
 from subscriptions.forms import MemberSubscriptionForm, SubscriptionPlanForm
 from subscriptions.models import MemberSubscription, SubscriptionPlan
 from subscriptions.views import create_member_subscription
@@ -53,6 +56,13 @@ class SubscriptionTenantSafetyTests(TestCase):
             duration_days=30,
             price=200,
         )
+        self.owner = User.objects.create_user(
+            username="owner-subscriptions",
+            password="pass12345",
+            owned_organization=self.org_a,
+        )
+        module, _ = Module.objects.get_or_create(code="SUBSCRIPTIONS", defaults={"name": "Subscriptions"})
+        GymModule.objects.get_or_create(gym=self.gym_a, module=module, defaults={"is_active": True})
 
     def test_subscription_form_querysets_are_scoped_to_current_gym(self):
         form = MemberSubscriptionForm(gym=self.gym_a)
@@ -118,3 +128,35 @@ class SubscriptionTenantSafetyTests(TestCase):
         self.assertEqual(second_subscription.gym, self.gym_a)
         self.assertFalse(first_subscription.is_active)
         self.assertTrue(second_subscription.is_active)
+
+    def test_plan_list_requires_active_module(self):
+        self.client.force_login(self.owner)
+        GymModule.objects.filter(gym=self.gym_a, module__code="SUBSCRIPTIONS").update(is_active=False)
+        session = self.client.session
+        session["current_gym_id"] = self.gym_a.id
+        session.save()
+
+        response = self.client.get(reverse("subscriptions:subscription_plan_list"))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_create_subscription_shows_consistent_success_message(self):
+        self.client.force_login(self.owner)
+        session = self.client.session
+        session["current_gym_id"] = self.gym_a.id
+        session.save()
+
+        response = self.client.post(
+            reverse("subscriptions:create_subscription"),
+            {
+                "member": self.member_a.id,
+                "plan": self.plan_a.id,
+                "start_date": timezone.now().date().isoformat(),
+                "auto_renew": "on",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        messages = [message.message for message in get_messages(response.wsgi_request)]
+        self.assertTrue(any("Abonnement enregistre avec succes." in message for message in messages))

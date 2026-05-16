@@ -47,7 +47,6 @@
                                     {% elif user_role.role == 'coach' %}bg-info
                                     {% elif user_role.role == 'reception' %}bg-secondary
                                     {% elif user_role.role == 'cashier' %}bg-warning
-                                    {% elif user_role.role == 'accountant' %}bg-dark
                                     {% else %}bg-light
                                     {% endif %}">
                                     {{ user_role.get_role_display }}

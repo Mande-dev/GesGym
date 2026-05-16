@@ -8,7 +8,7 @@ from organizations.models import Gym, Organization
 INTERNAL_ROLE_CHOICES = [
     (value, label)
     for value, label in UserGymRole.ROLE_CHOICES
-    if value != "owner"
+    if value not in {"owner", "accountant"}
 ]
 
 

@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
 from django.shortcuts import get_object_or_404, redirect, render
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from django.views.decorators.http import require_POST
 from django.db.models import Q, Count, Sum, Exists, OuterRef
 from django.db.models.functions import ExtractHour, ExtractMonth, TruncDate
@@ -16,6 +16,7 @@ from compte.models import User
 from compte.utils import generate_username
 from coaching.models import CoachSpecialty
 from organizations.models import SensitiveActivityLog
+from .audit import log_sensitive_action
 from .forms import CoachSpecialtyForm, InternalEmployeeForm, OrganizationSettingsForm
 from members.models import Member
 from organizations.models import Gym, GymModule
@@ -307,7 +308,7 @@ def _should_use_member_portal(user):
         user.member_profile
     except AttributeError:
         return False
-    return not UserGymRole.objects.filter(user=user, is_active=True).exclude(role="accountant").exists()
+    return not UserGymRole.objects.filter(user=user, is_active=True).exists()
 
 
 @login_required
@@ -438,24 +439,6 @@ def _settings_allowed(request):
     )
 
 
-def _log_sensitive_action(request, action, target_type="", target_label="", metadata=None, gym=None):
-    if not getattr(request, "organization", None):
-        return
-
-    SensitiveActivityLog.objects.create(
-        organization=request.organization,
-        gym=gym or getattr(request, "gym", None),
-        actor=request.user if request.user.is_authenticated else None,
-        action=action,
-        target_type=target_type,
-        target_label=target_label,
-        metadata={
-            "ip": request.META.get("REMOTE_ADDR", ""),
-            **(metadata or {}),
-        },
-    )
-
-
 @login_required
 def settings_dashboard(request):
     if not _settings_allowed(request):
@@ -490,7 +473,7 @@ def settings_dashboard(request):
             organization_form = OrganizationSettingsForm(request.POST, request.FILES, instance=organization)
             if organization_form.is_valid():
                 organization_form.save()
-                _log_sensitive_action(
+                log_sensitive_action(
                     request,
                     "organization.updated",
                     "Organization",
@@ -523,7 +506,7 @@ def settings_dashboard(request):
                     role=employee_form.cleaned_data["role"],
                     is_active=employee_form.cleaned_data["is_active"],
                 )
-                _log_sensitive_action(
+                log_sensitive_action(
                     request,
                     "employee.created",
                     "UserGymRole",
@@ -550,7 +533,7 @@ def settings_dashboard(request):
             if action == "employee_reset_password":
                 role.user.password = make_password("12345")
                 role.user.save(update_fields=["password"])
-                _log_sensitive_action(
+                log_sensitive_action(
                     request,
                     "employee.password_reset",
                     "User",
@@ -570,7 +553,7 @@ def settings_dashboard(request):
             role.save(update_fields=["is_active"])
             role.user.is_active = should_activate
             role.user.save(update_fields=["is_active"])
-            _log_sensitive_action(
+            log_sensitive_action(
                 request,
                 "employee.activated" if should_activate else "employee.deactivated",
                 "UserGymRole",
@@ -595,7 +578,7 @@ def settings_dashboard(request):
                 if not created and not specialty.is_active:
                     specialty.is_active = True
                     specialty.save(update_fields=["is_active"])
-                _log_sensitive_action(
+                log_sensitive_action(
                     request,
                     "coach_specialty.created" if created else "coach_specialty.reactivated",
                     "CoachSpecialty",
@@ -610,7 +593,7 @@ def settings_dashboard(request):
             specialty = get_object_or_404(CoachSpecialty, id=request.POST.get("specialty_id"), gym=gym)
             specialty.is_active = action == "specialty_activate"
             specialty.save(update_fields=["is_active"])
-            _log_sensitive_action(
+            log_sensitive_action(
                 request,
                 "coach_specialty.activated" if specialty.is_active else "coach_specialty.deactivated",
                 "CoachSpecialty",
@@ -670,6 +653,8 @@ def gym_dashboard(request, gym_id):
     
     # Non-Owner : utiliser request.role du middleware
     elif hasattr(request, 'role') and request.role:
+        if not getattr(request, "gym", None) or request.gym.id != gym.id:
+            return HttpResponseForbidden("Acces non autorise")
         # Vérifier que l'utilisateur a bien un rôle dans ce gym
         user_role_obj = UserGymRole.objects.filter(
             user=request.user, 
@@ -824,7 +809,7 @@ def gym_dashboard(request, gym_id):
     previous_period_revenue = 0
     sales_labels = []
     sales_values = []
-    if user_role in ["owner", "manager", "accountant", "cashier"]:
+    if user_role in ["owner", "manager", "cashier"]:
         successful_incoming_payments = Payment.objects.filter(
             gym=gym,
             status="success",
@@ -878,12 +863,12 @@ def gym_dashboard(request, gym_id):
     status_chart_values = [active_members, expired_members, suspended_members]
 
     recent_payments = []
-    if user_role in ["owner", "manager", "accountant", "cashier"]:
+    if user_role in ["owner", "manager", "cashier"]:
         recent_payments = Payment.objects.filter(gym=gym).select_related("member").order_by("-created_at")[:5]
 
     pending_count = 0
     pending_total = 0
-    if user_role in ["owner", "manager", "accountant", "cashier"]:
+    if user_role in ["owner", "manager", "cashier"]:
         pending_payments = Payment.objects.filter(
             gym=gym,
             status="pending",
@@ -1418,3 +1403,37 @@ def accounting_report_export(request):
         f'attachment; filename="{accounting_filename(gym, period_data, export_format)}"'
     )
     return response
+
+
+def health_details(request):
+    from django.conf import settings
+    from django.db import connections
+    from django.db.utils import DatabaseError
+
+    database_ok = True
+    database_error = ""
+    try:
+        with connections["default"].cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except DatabaseError as exc:
+        database_ok = False
+        database_error = str(exc)
+
+    payload = {
+        "status": "ok" if database_ok else "degraded",
+        "environment": settings.ENVIRONMENT,
+        "debug": settings.DEBUG,
+        "database": {
+            "ok": database_ok,
+            "engine": settings.DATABASES["default"]["ENGINE"],
+            "error": database_error,
+        },
+        "tenancy": {
+            "active_organizations": Gym.objects.values("organization_id").distinct().count(),
+            "active_gyms": Gym.objects.filter(is_active=True).count(),
+        },
+        "installed_apps_count": len(settings.INSTALLED_APPS),
+        "timezone": settings.TIME_ZONE,
+    }
+    return JsonResponse(payload, status=200 if database_ok else 503)

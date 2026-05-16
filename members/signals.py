@@ -3,7 +3,6 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
 
-from compte.models import UserGymRole
 from organizations.models import Gym
 from .models import Member, MemberPreRegistrationLink
 
@@ -30,13 +29,6 @@ def create_user_for_member(sender, instance, created, **kwargs):
             first_name=instance.first_name,
             last_name=instance.last_name,
             email=instance.email or "",
-        )
-
-        UserGymRole.objects.create(
-            user=user,
-            gym=instance.gym,
-            role="accountant",
-            is_active=True,
         )
 
         instance.user = user

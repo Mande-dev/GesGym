@@ -90,14 +90,7 @@ class MemberPreRegistrationTests(TestCase):
         self.assertEqual(member.gym, self.gym)
         self.assertIsNotNone(member.user)
         self.assertTrue(member.user.check_password("12345"))
-        self.assertTrue(
-            UserGymRole.objects.filter(
-                user=member.user,
-                gym=self.gym,
-                role="accountant",
-                is_active=True,
-            ).exists()
-        )
+        self.assertFalse(UserGymRole.objects.filter(user=member.user, gym=self.gym, is_active=True).exists())
 
     def test_pre_registration_list_is_scoped_to_current_gym(self):
         MemberPreRegistration.objects.create(

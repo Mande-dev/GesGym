@@ -3,9 +3,11 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.urls import reverse
 
+from compte.models import User, UserGymRole
 from members.models import Member
-from organizations.models import Gym, Organization
+from organizations.models import Gym, GymModule, Module, Organization, SensitiveActivityLog
 from products.models import Product, StockMovement
 from .models import CashRegister, ExchangeRate, Payment
 from .services import record_product_sale
@@ -41,6 +43,10 @@ class PosAccountingTests(TestCase):
             phone="20001",
             email="bob@example.com",
         )
+        self.cashier = User.objects.create_user(username="cashier-pos", password="test-pass")
+        UserGymRole.objects.create(user=self.cashier, gym=self.gym_a, role="cashier")
+        module, _ = Module.objects.get_or_create(code="POS", defaults={"name": "POS"})
+        GymModule.objects.get_or_create(gym=self.gym_a, module=module, defaults={"is_active": True})
 
     def test_cash_register_requires_exchange_rate_when_opening(self):
         with self.assertRaises(ValidationError):
@@ -186,3 +192,27 @@ class PosAccountingTests(TestCase):
                 type="in",
                 status="success",
             )
+
+    def test_cashier_dashboard_requires_active_module(self):
+        self.client.login(username="cashier-pos", password="test-pass")
+        GymModule.objects.filter(gym=self.gym_a, module__code="POS").update(is_active=False)
+
+        response = self.client.get(reverse("pos:cashier_dashboard"))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_open_register_logs_sensitive_action(self):
+        self.client.login(username="cashier-pos", password="test-pass")
+
+        response = self.client.post(
+            reverse("pos:open_register"),
+            {"opening_amount": "100.00", "exchange_rate": "2800.00"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            SensitiveActivityLog.objects.filter(
+                organization=self.org_a,
+                action="pos.register_opened",
+            ).exists()
+        )

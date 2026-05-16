@@ -31,7 +31,7 @@ def _resolve_login_success_url(request):
             is_active=True,
             gym__is_active=True,
             gym__organization__is_active=True,
-        ).exclude(role="accountant").exists()
+        ).exists()
         if not has_staff_role:
             return reverse_lazy("members:member_portal")
 
@@ -229,7 +229,7 @@ def create_user_by_owner(request):
     context = {
         'form': form,
         'gym': gym,
-        'available_roles': ['manager', 'coach', 'reception', 'cashier', 'accountant'],
+        'available_roles': ['manager', 'coach', 'reception', 'cashier'],
     }
     return render(request, 'compte/create_user.html', context)
 

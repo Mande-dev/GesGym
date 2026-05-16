@@ -4,6 +4,7 @@ from django.db import transaction
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
+from core.audit import log_sensitive_action
 from smartclub.access_control import NOTIFICATION_ROLES
 from smartclub.decorators import module_required, role_required
 
@@ -42,6 +43,16 @@ def notification_dashboard(request):
             ]
             with transaction.atomic():
                 Notification.objects.bulk_create(payload, batch_size=200)
+            log_sensitive_action(
+                request,
+                "notification.batch_sent",
+                "Notification",
+                form.cleaned_data["title"] or "Message de la salle",
+                metadata={
+                    "recipients_count": len(recipients),
+                    "target": form.cleaned_data["target"],
+                },
+            )
 
             target = form.cleaned_data["target"]
             target_label = InAppMessageForm.target_label(target).lower()

@@ -1,6 +1,11 @@
 # core/middleware.py
+import logging
+import uuid
+
 from organizations.models import Gym
 from compte.models import UserGymRole
+
+logger = logging.getLogger(__name__)
 
 class GymMiddleware:
     """
@@ -68,3 +73,33 @@ class GymMiddleware:
                 request.is_owner = False
 
         return self.get_response(request)
+
+
+class RequestTraceMiddleware:
+    """
+    Ajoute un identifiant de requete et enrichit les logs d'erreur serveur.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        request.request_id = uuid.uuid4().hex
+        try:
+            response = self.get_response(request)
+        except Exception:
+            logger.exception(
+                "Unhandled application error",
+                extra={
+                    "request_id": request.request_id,
+                    "path": request.path,
+                    "method": request.method,
+                    "user_id": getattr(getattr(request, "user", None), "id", None),
+                    "gym_id": getattr(getattr(request, "gym", None), "id", None),
+                    "organization_id": getattr(getattr(request, "organization", None), "id", None),
+                },
+            )
+            raise
+
+        response["X-Request-ID"] = request.request_id
+        return response
