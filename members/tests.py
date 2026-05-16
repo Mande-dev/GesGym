@@ -159,12 +159,16 @@ class MemberPortalTests(TestCase):
             name="Mensuel",
             duration_days=30,
             price=35,
+            coaching_mode=SubscriptionPlan.COACHING_MODE_BOTH,
+            coaching_level=SubscriptionPlan.COACHING_LEVEL_PREMIUM,
         )
         self.year_plan = SubscriptionPlan.objects.create(
             gym=self.gym,
             name="Annuel",
             duration_days=365,
             price=320,
+            coaching_mode=SubscriptionPlan.COACHING_MODE_GROUP,
+            coaching_level=SubscriptionPlan.COACHING_LEVEL_STANDARD,
         )
         today = timezone.now().date()
         self.subscription = MemberSubscription.objects.create(
@@ -206,6 +210,8 @@ class MemberPortalTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Carte membre")
         self.assertContains(response, "Mon accompagnement")
+        self.assertContains(response, "Coaching individuel et groupe")
+        self.assertContains(response, "Premium")
         self.assertContains(response, "Derniers acces")
         self.assertContains(response, "Changer mon mot de passe")
         self.assertContains(response, "Mot de passe")
@@ -272,6 +278,42 @@ class MemberPortalTests(TestCase):
         response = self.client.get(reverse("members:member_portal"), {"tab": "plans"})
         self.assertContains(response, "Demande en attente")
         self.assertContains(response, "En attente")
+
+    def test_member_plans_tab_shows_best_selling_plan_first(self):
+        second_member = Member.objects.create(
+            gym=self.gym,
+            first_name="Lina",
+            last_name="Choice",
+            phone="+243810000102",
+            email="lina.choice@example.com",
+        )
+        today = timezone.now().date()
+        MemberSubscription.objects.create(
+            gym=self.gym,
+            member=second_member,
+            plan=self.year_plan,
+            start_date=today,
+            end_date=today + timedelta(days=365),
+            is_active=True,
+        )
+        MemberSubscription.objects.create(
+            gym=self.gym,
+            member=second_member,
+            plan=self.year_plan,
+            start_date=today - timedelta(days=400),
+            end_date=today - timedelta(days=35),
+            is_active=False,
+        )
+
+        self.client.force_login(self.member.user)
+
+        response = self.client.get(reverse("members:member_portal"), {"tab": "plans"})
+
+        self.assertEqual(response.status_code, 200)
+        plans = list(response.context["available_plans"])
+        self.assertEqual(plans[0].id, self.year_plan.id)
+        self.assertEqual(response.context["top_plan_sales_count"], 2)
+        self.assertContains(response, "La plus choisie")
 
     def test_member_portal_messages_tab_shows_unread_badge_and_compact_sections(self):
         Notification.objects.create(

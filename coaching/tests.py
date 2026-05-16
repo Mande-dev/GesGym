@@ -71,7 +71,16 @@ class CoachingTenantTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Coach A")
         self.assertNotContains(response, "Coach B")
-        self.assertContains(response, "Total coaches")
+        self.assertContains(response, "Coachs actifs")
+        self.assertContains(response, "Membres sans coach")
+        self.assertContains(response, "Nouveau workflow de pilotage")
+
+    def test_coach_list_search_filters_results(self):
+        response = self.client.get(reverse("coaching:list"), {"search": "Musculation"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Coach A")
+        self.assertNotContains(response, "Coach B")
 
     def test_other_gym_coach_detail_is_not_accessible(self):
         response = self.client.get(reverse("coaching:detail", args=[self.coach_b.id]))

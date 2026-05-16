@@ -49,12 +49,16 @@ class SubscriptionTenantSafetyTests(TestCase):
             name="Mensuel",
             duration_days=30,
             price=100,
+            coaching_mode=SubscriptionPlan.COACHING_MODE_INDIVIDUAL,
+            coaching_level=SubscriptionPlan.COACHING_LEVEL_STANDARD,
         )
         self.plan_b = SubscriptionPlan.objects.create(
             gym=self.gym_b,
             name="Premium",
             duration_days=30,
             price=200,
+            coaching_mode=SubscriptionPlan.COACHING_MODE_BOTH,
+            coaching_level=SubscriptionPlan.COACHING_LEVEL_PREMIUM,
         )
         self.owner = User.objects.create_user(
             username="owner-subscriptions",
@@ -103,6 +107,8 @@ class SubscriptionTenantSafetyTests(TestCase):
                 "name": "mensuel",
                 "duration_days": 45,
                 "price": 150,
+                "coaching_mode": SubscriptionPlan.COACHING_MODE_NONE,
+                "coaching_level": SubscriptionPlan.COACHING_LEVEL_STANDARD,
                 "is_active": "on",
             },
             gym=self.gym_a,
@@ -112,6 +118,8 @@ class SubscriptionTenantSafetyTests(TestCase):
                 "name": "Mensuel",
                 "duration_days": 45,
                 "price": 150,
+                "coaching_mode": SubscriptionPlan.COACHING_MODE_BOTH,
+                "coaching_level": SubscriptionPlan.COACHING_LEVEL_PREMIUM,
                 "is_active": "on",
             },
             gym=self.gym_b,
@@ -128,6 +136,14 @@ class SubscriptionTenantSafetyTests(TestCase):
         self.assertEqual(second_subscription.gym, self.gym_a)
         self.assertFalse(first_subscription.is_active)
         self.assertTrue(second_subscription.is_active)
+
+    def test_plan_exposes_coaching_rights_payload(self):
+        rights = self.plan_b.coaching_rights_payload()
+
+        self.assertTrue(rights["has_any_access"])
+        self.assertTrue(rights["allows_individual"])
+        self.assertTrue(rights["allows_group"])
+        self.assertEqual(rights["level"], SubscriptionPlan.COACHING_LEVEL_PREMIUM)
 
     def test_plan_list_requires_active_module(self):
         self.client.force_login(self.owner)
@@ -160,3 +176,41 @@ class SubscriptionTenantSafetyTests(TestCase):
         self.assertEqual(response.status_code, 200)
         messages = [message.message for message in get_messages(response.wsgi_request)]
         self.assertTrue(any("Abonnement enregistre avec succes." in message for message in messages))
+
+    def test_plan_list_marks_best_selling_plan(self):
+        self.client.force_login(self.owner)
+        session = self.client.session
+        session["current_gym_id"] = self.gym_a.id
+        session.save()
+
+        second_member = Member.objects.create(
+            gym=self.gym_a,
+            first_name="Emma",
+            last_name="Top",
+            phone="10002",
+            email="emma@example.com",
+        )
+        other_plan = SubscriptionPlan.objects.create(
+            gym=self.gym_a,
+            name="Annuel",
+            duration_days=365,
+            price=500,
+            coaching_mode=SubscriptionPlan.COACHING_MODE_NONE,
+            coaching_level=SubscriptionPlan.COACHING_LEVEL_STANDARD,
+        )
+
+        create_member_subscription(self.member_a, self.plan_a)
+        create_member_subscription(self.member_a, self.plan_a)
+        create_member_subscription(second_member, other_plan)
+
+        response = self.client.get(reverse("subscriptions:subscription_plan_list"))
+
+        self.assertEqual(response.status_code, 200)
+        plans = list(response.context["plans"])
+        mensuel = next(plan for plan in plans if plan.id == self.plan_a.id)
+        annuel = next(plan for plan in plans if plan.id == other_plan.id)
+
+        self.assertEqual(response.context["top_sales_count"], 2)
+        self.assertEqual(mensuel.total_sales_count, 2)
+        self.assertEqual(annuel.total_sales_count, 1)
+        self.assertContains(response, "Plus vendue", count=1)

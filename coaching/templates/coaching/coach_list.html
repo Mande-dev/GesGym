@@ -29,14 +29,16 @@
 <style>
 .coach-stat-card,
 .coach-card,
-.filter-card {
+.filter-card,
+.insight-card {
     border: 1px solid rgba(148, 163, 184, 0.15);
     border-radius: 18px;
     background: #fff;
     box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
 }
 
-.coach-stat-card {
+.coach-stat-card,
+.insight-card {
     height: 100%;
 }
 
@@ -83,6 +85,46 @@
     font-weight: 600;
 }
 
+.coach-card-footer {
+    border-top: 1px solid rgba(148, 163, 184, 0.12);
+    padding-top: 0.9rem;
+}
+
+.workload-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.workload-light {
+    background: rgba(25, 135, 84, 0.10);
+    color: #198754;
+}
+
+.workload-medium {
+    background: rgba(255, 193, 7, 0.16);
+    color: #9a6a00;
+}
+
+.workload-heavy {
+    background: rgba(220, 53, 69, 0.10);
+    color: #dc3545;
+}
+
+.insight-list {
+    margin: 0;
+    padding-left: 1rem;
+    color: #64748b;
+}
+
+.insight-list li + li {
+    margin-top: 0.45rem;
+}
+
 .empty-state-icon {
     font-size: 64px;
     color: #94a3b8;
@@ -105,30 +147,9 @@
                     <span class="material-icons">groups</span>
                 </div>
                 <div>
-                    <div class="fs-12 text-muted">Total coaches</div>
-                    <h4 class="mb-0">{{ coaches|length }}</h4>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="coach-stat-card p-3">
-            <div class="d-flex align-items-center gap-3">
-                <div class="icon-box" style="background: rgba(25, 135, 84, 0.08); color:#198754;">
-                    <span class="material-icons">verified</span>
-                </div>
-                <div>
-                    <div class="fs-12 text-muted">Statut affiché</div>
-                    <h4 class="mb-0">
-                        {% if active_filter == 'active' %}
-                            Actifs
-                        {% elif active_filter == 'inactive' %}
-                            Inactifs
-                        {% else %}
-                            Tous
-                        {% endif %}
-                    </h4>
+                    <div class="fs-12 text-muted">Coachs actifs</div>
+                    <h4 class="mb-0">{{ active_coaches }}</h4>
+                    <small class="text-muted">sur {{ total_coaches }} au total</small>
                 </div>
             </div>
         </div>
@@ -138,11 +159,27 @@
         <div class="coach-stat-card p-3">
             <div class="d-flex align-items-center gap-3">
                 <div class="icon-box" style="background: rgba(255, 193, 7, 0.12); color:#b78103;">
-                    <span class="material-icons">location_city</span>
+                    <span class="material-icons">person_search</span>
                 </div>
                 <div>
-                    <div class="fs-12 text-muted">Salle</div>
-                    <h4 class="mb-0">{{ gym.name }}</h4>
+                    <div class="fs-12 text-muted">Membres sans coach</div>
+                    <h4 class="mb-0">{{ unassigned_members_count }}</h4>
+                    <small class="text-muted">a repartir dans la salle</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="coach-stat-card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon-box" style="background: rgba(25, 135, 84, 0.08); color:#198754;">
+                    <span class="material-icons">balance</span>
+                </div>
+                <div>
+                    <div class="fs-12 text-muted">Charge moyenne</div>
+                    <h4 class="mb-0">{{ average_members_per_coach }}</h4>
+                    <small class="text-muted">membres par coach actif</small>
                 </div>
             </div>
         </div>
@@ -157,6 +194,15 @@
         </div>
 
         <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label small text-muted">Recherche</label>
+                <input type="text"
+                       name="search"
+                       class="form-control"
+                       value="{{ search }}"
+                       placeholder="Nom, telephone ou specialite">
+            </div>
+
             <div class="col-md-3">
                 <label class="form-label small text-muted">Statut</label>
                 <select name="active" class="form-select">
@@ -166,11 +212,41 @@
                 </select>
             </div>
 
-            <div class="col-md-3 d-flex gap-2">
+            <div class="col-md-4 d-flex gap-2">
                 <button type="submit" class="btn btn-primary w-100">Filtrer</button>
-                <a href="{% url 'coaching:list' %}" class="btn btn-light-brand w-100">Réinitialiser</a>
+                <a href="{% url 'coaching:list' %}" class="btn btn-light-brand w-100">Reinitialiser</a>
             </div>
         </form>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-7">
+        <div class="insight-card p-4">
+            <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                <div>
+                    <h6 class="mb-1">Nouveau workflow de pilotage</h6>
+                    <p class="text-muted mb-0">Le module commence maintenant par une vue de repartition avant d'entrer dans une fiche coach.</p>
+                </div>
+                <span class="badge text-bg-light border">Etape 1</span>
+            </div>
+            <ol class="mt-3 mb-0 text-muted ps-3">
+                <li>Verifier les membres sans coach et la charge moyenne.</li>
+                <li>Identifier le coach disponible via la liste et sa charge.</li>
+                <li>Ouvrir la fiche du coach pour faire l'affectation.</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="insight-card p-4">
+            <h6 class="mb-3">Points d'attention</h6>
+            <ul class="insight-list">
+                <li>{{ assigned_members_count }} membres sont deja affectes a un coach.</li>
+                <li>{{ inactive_coaches }} coach(s) sont inactifs.</li>
+                <li>{{ new_coaches_period }} nouveau(x) coach(s) ce mois-ci.</li>
+            </ul>
+        </div>
     </div>
 </div>
 
@@ -195,15 +271,34 @@
             </div>
 
             <div class="coach-meta mb-3">
-                <div><strong>Téléphone :</strong> {{ coach.phone|default:"-" }}</div>
-                <div><strong>Spécialité :</strong> {{ coach.specialty|default:"-" }}</div>
-                <div><strong>Membres assignés :</strong> {{ coach.members.count }}</div>
+                <div><strong>Telephone :</strong> {{ coach.phone|default:"-" }}</div>
+                <div><strong>Specialite :</strong> {{ coach.specialty|default:"-" }}</div>
+                <div><strong>Membres assignes :</strong> {{ coach.member_count }}</div>
+            </div>
+
+            <div class="coach-card-footer mb-3">
+                {% if coach.member_count >= 10 %}
+                    <span class="workload-badge workload-heavy">
+                        <span class="material-icons" style="font-size:16px;">priority_high</span>
+                        Charge elevee
+                    </span>
+                {% elif coach.member_count >= 5 %}
+                    <span class="workload-badge workload-medium">
+                        <span class="material-icons" style="font-size:16px;">scale</span>
+                        Charge moyenne
+                    </span>
+                {% else %}
+                    <span class="workload-badge workload-light">
+                        <span class="material-icons" style="font-size:16px;">check_circle</span>
+                        Disponible pour nouveaux membres
+                    </span>
+                {% endif %}
             </div>
 
             <div class="d-flex gap-2 flex-wrap">
                 <a href="{% url 'coaching:detail' coach.id %}" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1">
                     <span class="material-icons" style="font-size:16px;">visibility</span>
-                    Détails
+                    Ouvrir la fiche
                 </a>
                 <a href="{% url 'coaching:update' coach.id %}" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1">
                     <span class="material-icons" style="font-size:16px;">edit</span>
@@ -217,8 +312,8 @@
         <div class="card filter-card">
             <div class="card-body text-center py-5">
                 <span class="material-icons empty-state-icon">fitness_center</span>
-                <p class="mt-3 mb-1 fw-semibold text-muted">Aucun coach trouvé</p>
-                <small class="text-muted d-block mb-3">Ajoute ton premier coach pour commencer à gérer les affectations.</small>
+                <p class="mt-3 mb-1 fw-semibold text-muted">Aucun coach trouve</p>
+                <small class="text-muted d-block mb-3">Ajoute ton premier coach pour commencer a gerer les affectations.</small>
                 <a href="{% url 'coaching:create' %}" class="btn btn-primary">
                     Ajouter un coach
                 </a>

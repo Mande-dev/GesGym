@@ -10,7 +10,7 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
-from django.db.models import Q, Exists, OuterRef
+from django.db.models import Q, Exists, OuterRef, Count
 from django.core.paginator import Paginator
 from django.urls import reverse
 from django.templatetags.static import static
@@ -77,6 +77,21 @@ def _status_class(status):
     }.get(status, "is-unknown")
 
 
+def _member_coaching_rights(subscription):
+    if subscription and subscription.plan:
+        return subscription.plan.coaching_rights_payload()
+
+    return {
+        "mode": "none",
+        "mode_label": "Aucun coaching",
+        "level": "standard",
+        "level_label": "Standard",
+        "allows_individual": False,
+        "allows_group": False,
+        "has_any_access": False,
+    }
+
+
 def _member_tab_config(unread_notification_count):
     badge = str(unread_notification_count) if unread_notification_count else ""
     return [
@@ -128,10 +143,21 @@ def member_portal(request):
         channel=Notification.CHANNEL_IN_APP,
         read_at__isnull=True,
     ).count()
-    available_plans = SubscriptionPlan.objects.filter(
+    available_plans_queryset = SubscriptionPlan.objects.filter(
         gym=member.gym,
         is_active=True,
-    ).order_by("price", "duration_days", "name")
+    ).annotate(
+        total_sales_count=Count(
+            "subscriptions",
+            filter=Q(subscriptions__gym=member.gym),
+            distinct=True,
+        )
+    )
+    top_plan_sales_count = max(
+        (plan.total_sales_count for plan in available_plans_queryset),
+        default=0,
+    )
+    available_plans = available_plans_queryset.order_by("-total_sales_count", "price", "duration_days", "name")
     pending_requests = SubscriptionRequest.objects.filter(
         gym=member.gym,
         member=member,
@@ -193,6 +219,7 @@ def member_portal(request):
         "member_tabs": member_tabs,
         "active_tab": active_tab,
         "available_plans": available_plans,
+        "top_plan_sales_count": top_plan_sales_count,
         "pending_requests": pending_requests,
         "pending_plan_ids": pending_plan_ids,
         "current_plan_id": subscription.plan_id if subscription and subscription.plan_id else None,
@@ -203,6 +230,7 @@ def member_portal(request):
         "password_form": password_form,
         "pwa_manifest_url": reverse("members:member_app_manifest"),
         "pwa_service_worker_url": reverse("members:member_app_service_worker"),
+        "coaching_rights": _member_coaching_rights(subscription),
     }
     return render(request, "members/member_portal.html", context)
 

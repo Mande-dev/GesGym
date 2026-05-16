@@ -9,6 +9,28 @@ from django.core.exceptions import ValidationError
 
 # Create your models here.
 class SubscriptionPlan(models.Model):
+    COACHING_MODE_NONE = "none"
+    COACHING_MODE_INDIVIDUAL = "individual"
+    COACHING_MODE_GROUP = "group"
+    COACHING_MODE_BOTH = "both"
+
+    COACHING_MODE_CHOICES = (
+        (COACHING_MODE_NONE, "Aucun coaching"),
+        (COACHING_MODE_INDIVIDUAL, "Coaching individuel"),
+        (COACHING_MODE_GROUP, "Programme groupe"),
+        (COACHING_MODE_BOTH, "Coaching individuel et groupe"),
+    )
+
+    COACHING_LEVEL_STANDARD = "standard"
+    COACHING_LEVEL_PREMIUM = "premium"
+    COACHING_LEVEL_INTENSIVE = "intensive"
+
+    COACHING_LEVEL_CHOICES = (
+        (COACHING_LEVEL_STANDARD, "Standard"),
+        (COACHING_LEVEL_PREMIUM, "Premium"),
+        (COACHING_LEVEL_INTENSIVE, "Intensif"),
+    )
+
     gym = models.ForeignKey(
         Gym,
         on_delete=models.CASCADE,
@@ -19,6 +41,16 @@ class SubscriptionPlan(models.Model):
     duration_days = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField(blank=True, null=True)
+    coaching_mode = models.CharField(
+        max_length=20,
+        choices=COACHING_MODE_CHOICES,
+        default=COACHING_MODE_NONE,
+    )
+    coaching_level = models.CharField(
+        max_length=20,
+        choices=COACHING_LEVEL_CHOICES,
+        default=COACHING_LEVEL_STANDARD,
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     class Meta:
@@ -38,9 +70,27 @@ class SubscriptionPlan(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.gym})"
-    
 
-    
+    @property
+    def allows_individual_coaching(self):
+        return self.coaching_mode in {self.COACHING_MODE_INDIVIDUAL, self.COACHING_MODE_BOTH}
+
+    @property
+    def allows_group_coaching(self):
+        return self.coaching_mode in {self.COACHING_MODE_GROUP, self.COACHING_MODE_BOTH}
+
+    def coaching_rights_payload(self):
+        return {
+            "mode": self.coaching_mode,
+            "mode_label": self.get_coaching_mode_display(),
+            "level": self.coaching_level,
+            "level_label": self.get_coaching_level_display(),
+            "allows_individual": self.allows_individual_coaching,
+            "allows_group": self.allows_group_coaching,
+            "has_any_access": self.coaching_mode != self.COACHING_MODE_NONE,
+        }
+
+
 class MemberSubscription(models.Model):
 
     gym = models.ForeignKey(

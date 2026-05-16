@@ -51,12 +51,19 @@ def _plan_list_context(request, form=None):
                 subscriptions__is_paused=False,
             ),
             distinct=True,
-        )
+        ),
+        total_sales_count=Count(
+            "subscriptions",
+            filter=Q(subscriptions__gym=request.gym),
+            distinct=True,
+        ),
     ).order_by("-is_active", "name")
+    top_sales_count = max((plan.total_sales_count for plan in plans), default=0)
 
     return {
         "plans": plans,
         "form": form or SubscriptionPlanForm(gym=request.gym),
+        "top_sales_count": top_sales_count,
         "active_plans_count": plans.filter(is_active=True).count(),
         "active_subscriptions_count": active_subscriptions.count(),
         "auto_renew_count": active_subscriptions.filter(auto_renew=True).count(),
@@ -186,6 +193,8 @@ def edit_plan(request, plan_id):
             "duration_days": plan.duration_days,
             "price": float(plan.price),
             "description": plan.description or "",
+            "coaching_mode": plan.coaching_mode,
+            "coaching_level": plan.coaching_level,
             "is_active": plan.is_active,
         }
     )

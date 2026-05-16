@@ -11,15 +11,27 @@ class SubscriptionPlanForm(forms.ModelForm):
 
     class Meta:
         model = SubscriptionPlan
-        fields = ['name', 'duration_days', 'price', 'description', 'is_active']
+        fields = [
+            'name',
+            'duration_days',
+            'price',
+            'description',
+            'coaching_mode',
+            'coaching_level',
+            'is_active',
+        ]
         labels = {
             'price': 'Prix (USD)',
+            'coaching_mode': 'Acces coaching',
+            'coaching_level': 'Niveau de service coaching',
         }
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'duration_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
             'price': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': '0.01'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'coaching_mode': forms.Select(attrs={'class': 'form-select'}),
+            'coaching_level': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 

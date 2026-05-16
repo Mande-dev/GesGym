@@ -142,6 +142,55 @@
                     </div>
                 </div>
 
+                <div class="access-summary-grid">
+                    <article class="summary-card">
+                        <span>Droit coaching</span>
+                        <strong>{{ coaching_rights.mode_label }}</strong>
+                        <small>Active selon votre formule en cours.</small>
+                    </article>
+                    <article class="summary-card">
+                        <span>Niveau de service</span>
+                        <strong>{{ coaching_rights.level_label }}</strong>
+                        <small>
+                            {% if coaching_rights.has_any_access %}
+                                Niveau prevu pour votre prise en charge.
+                            {% else %}
+                                Aucun service coaching actif sur la formule actuelle.
+                            {% endif %}
+                        </small>
+                    </article>
+                </div>
+
+                {% if coaching_rights.has_any_access %}
+                    <div class="access-compact-list">
+                        {% if coaching_rights.allows_individual %}
+                            <article class="access-compact-card is-ok">
+                                <div class="access-compact-status">
+                                    <span class="dot ok"></span>
+                                    <strong>Coaching individuel inclus</strong>
+                                </div>
+                                <div class="access-compact-meta">
+                                    <p>Vous pourrez choisir ou activer un coach referent dans la prochaine etape.</p>
+                                </div>
+                            </article>
+                        {% endif %}
+
+                        {% if coaching_rights.allows_group %}
+                            <article class="access-compact-card is-ok">
+                                <div class="access-compact-status">
+                                    <span class="dot ok"></span>
+                                    <strong>Programme groupe inclus</strong>
+                                </div>
+                                <div class="access-compact-meta">
+                                    <p>Vous pourrez rejoindre un programme collectif compatible avec votre formule.</p>
+                                </div>
+                            </article>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <p class="empty-state">Votre formule actuelle ne comprend pas encore d'acces au coaching.</p>
+                {% endif %}
+
                 {% if coaches %}
                     <div class="coach-list">
                         {% for coach in coaches %}
@@ -154,7 +203,7 @@
                             </article>
                         {% endfor %}
                     </div>
-                {% else %}
+                {% elif coaching_rights.has_any_access %}
                     <p class="empty-state">Aucun coach n'est encore rattache a votre compte.</p>
                 {% endif %}
             </section>
@@ -444,14 +493,15 @@
 
                 <div class="plan-list">
                     {% for plan in available_plans %}
-                        <article class="plan-card {% if plan.id == current_plan_id %}is-current{% elif forloop.first %}is-featured{% endif %}">
+                        <article class="plan-card {% if plan.id == current_plan_id %}is-current{% endif %}{% if top_plan_sales_count and plan.total_sales_count == top_plan_sales_count %} is-featured{% endif %}">
                             <div class="plan-main">
                                 <div class="plan-title-row">
                                     <strong>{{ plan.name }}</strong>
+                                    {% if top_plan_sales_count and plan.total_sales_count == top_plan_sales_count %}
+                                        <span class="plan-badge">La plus choisie</span>
+                                    {% endif %}
                                     {% if plan.id == current_plan_id %}
                                         <span class="plan-badge current">Actuel</span>
-                                    {% elif forloop.first %}
-                                        <span class="plan-badge">Populaire</span>
                                     {% endif %}
                                 </div>
                                 <div class="plan-price">
