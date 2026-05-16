@@ -86,7 +86,7 @@ L'application utilise principalement les roles suivants:
 | `manager` | Gestionnaire de salle | Dashboard, membres, abonnements, POS, acces, rapports, coaching, machines, RH, stock, parametres locaux |
 | `reception` | Accueil / reception | Membres, caisse simple, controle d'acces, presences RH |
 | `cashier` | Caisse | Caisse POS et quelques operations membres |
-| `coach` | Compte interne de coach | Pas de module Coaching dedie dans l'etat actuel; acces limite |
+| `coach` | Compte interne de coach | Espace coach mobile dedie, membres suivis, programmes groupes, suivis et priorites |
 | `accountant` | Compte interne comptable | Pas de menu dedie visible dans l'etat actuel; acces limite |
 
 ### 3.1 Particularites importantes
@@ -95,8 +95,9 @@ L'application utilise principalement les roles suivants:
 - Le role `manager` est le role operationnel le plus complet apres `owner`.
 - Le role `reception` est centre sur l'accueil: membres, acces, pointage RH, caisse simple.
 - Le role `cashier` est centre sur la caisse.
-- Dans la version actuelle, la gestion du module Coaching reste reservee a `owner` et `manager`.
-- Les roles `coach` et `accountant` existent comme roles internes mais n'ouvrent pas encore, dans l'etat actuel, un espace metier complet a eux seuls.
+- Le pilotage complet du module Coaching reste reserve a `owner` et `manager`.
+- Le role `coach` dispose d'un espace mobile dedie pour suivre ses membres et ses programmes, mais n'ouvre pas tout le back-office manager.
+- Le role `accountant` reste un role interne limite tant qu'aucun espace metier comptable dedie n'est active dans la salle.
 
 ## 4. Premiere connexion et demarrage
 
@@ -302,7 +303,7 @@ Lorsqu'un membre se connecte avec son propre compte, il accede a un espace mobil
 
 Cet espace propose:
 
-- un ecran d'accueil avec carte membre, QR code, coach et acces recents
+- un ecran d'accueil avec carte membre, QR code, droits coaching, coach et acces recents
 - un onglet `Messages`
 - un onglet `Abonnement`
 - un onglet `Formules`
@@ -325,11 +326,23 @@ Dans l'onglet `Abonnement`, le membre voit:
 - sa formule active
 - les jours restants
 - ses dernieres operations de paiement
+- les droits coaching inclus par sa formule
+- le niveau de service coaching associe a sa formule
+
+Dans l'espace `Mon accompagnement`, le membre peut voir ou faire selon ses droits:
+
+- son coach referent actuel
+- son programme groupe actif
+- choisir lui-meme un coach disponible si sa formule l'autorise
+- rejoindre lui-meme un programme groupe actif si sa formule l'autorise et qu'il reste de la place
+- consulter le programme deja etabli par son coach ou son programme groupe
+- laisser un feedback sur son coach et, si besoin, sur son programme groupe
 
 Dans l'onglet `Formules`, le membre peut:
 
 - consulter les formules disponibles
 - envoyer une demande de souscription
+- voir en premier la formule la plus choisie, mise en avant par le badge `La plus choisie`
 
 Le changement de mot de passe est disponible directement depuis l'accueil de l'espace membre, dans le bloc `Securite`.
 
@@ -428,11 +441,14 @@ Chaque formule contient:
 - prix en USD
 - description
 - statut actif/inactif
+- mode de coaching inclus (`aucun`, `individuel`, `groupe`, `individuel + groupe`)
+- niveau de service coaching (`standard`, `premium`, `intensif`)
 
 Regles importantes:
 
 - le nom d'une formule doit etre unique dans une meme salle
 - une formule avec historique n'est pas supprimee physiquement: elle est desactivee
+- les droits coaching affiches dans l'espace membre viennent directement de la formule active du membre
 
 ### 6.3.3 Creer un abonnement pour un membre
 
@@ -456,6 +472,7 @@ La page des formules donne aussi une vision rapide de:
 - nombre d'abonnements actifs
 - abonnements a renouvellement auto
 - abonnements proches de l'expiration
+- formule la plus vendue, mise en avant par un badge dedie
 
 ### 6.3.5 Demandes envoyees depuis l'espace membre
 
@@ -662,12 +679,51 @@ Les rapports peuvent etre exportes en:
 
 Le module Coaching sert a:
 
-- creer des coaches
-- gerer leurs specialites
-- assigner des membres a chaque coach
-- suivre la charge par coach
+- vendre, delivrer et piloter le service coaching de la salle
+- creer des coaches et gerer leurs specialites
+- gerer le coaching individuel et les programmes groupes
+- permettre au membre eligible de choisir son coach ou son programme
+- suivre le travail terrain des coaches
+- mesurer la satisfaction et les alertes a traiter
 
-### 6.7.2 Fiche coach
+### 6.7.2 Formules et droits coaching
+
+Le module Coaching est relie aux formules d'abonnement.
+
+Une formule peut donner acces a:
+
+- aucun coaching
+- coaching individuel
+- programme groupe
+- coaching individuel et programme groupe
+
+Elle peut aussi porter un niveau de service:
+
+- `standard`
+- `premium`
+- `intensif`
+
+Ces droits sont repris automatiquement dans l'espace membre pour determiner ce que le membre peut activer lui-meme.
+
+### 6.7.3 Vue manager / owner
+
+La page `Coaches` est maintenant un ecran de pilotage.
+
+Elle permet de voir rapidement:
+
+- les coaches actifs
+- les membres sans coach
+- les membres sans suivi
+- les premiers contacts en retard
+- les suivis anciens
+- les relances en retard
+- les feedbacks sensibles
+- la charge par coach
+- la file manager `A traiter`
+
+Cette vue sert a repartir la charge, detecter les oublis et traiter les cas sensibles sans devoir ouvrir chaque fiche une par une.
+
+### 6.7.4 Fiche coach manager
 
 Chaque coach possede:
 
@@ -676,7 +732,16 @@ Chaque coach possede:
 - specialite
 - statut actif/inactif
 
-### 6.7.3 Specialites
+La fiche coach manager affiche egalement:
+
+- les membres rattaches
+- les suivis deja traces
+- le dernier suivi enregistre
+- les relances en retard
+- les feedbacks recents
+- les demandes de recontact
+
+### 6.7.5 Specialites
 
 Les specialites coach se gerent dans `Parametres > Specialites coach`.
 
@@ -686,7 +751,123 @@ Une specialite:
 - peut etre desactivee
 - reste visible sur les anciennes fiches si elle a deja ete utilisee
 
-### 6.7.4 Affecter des membres a un coach
+### 6.7.6 Affectation et historique
+
+L'affectation d'un membre a un coach est historisee.
+
+Le systeme enregistre:
+
+- la date de debut d'affectation
+- la date de fin si le membre change de coach
+- le coach actif a un instant donne
+
+Ce point est important car les alertes de `premier contact en retard` se basent sur la date reelle d'affectation au coach, et non plus sur la date de creation du membre.
+
+### 6.7.7 Choix membre
+
+Lorsqu'un membre paie une formule qui donne acces au coaching, il peut activer lui-meme ce droit dans son espace mobile.
+
+Selon sa formule, il peut:
+
+- choisir un coach referent disponible
+- rejoindre un programme groupe actif
+
+Regles actuelles:
+
+- le choix est direct
+- un membre ne garde qu'un coach referent actif a la fois dans ce flux
+- un membre ne garde qu'un programme groupe actif a la fois dans ce flux
+- un programme complet ne peut plus etre rejoint
+
+Le coach et le manager voient ensuite ce choix dans leurs vues respectives.
+
+### 6.7.8 Programmes groupes
+
+Un programme groupe permet de proposer un coaching encadre a plusieurs membres.
+
+Chaque programme contient:
+
+- un nom
+- un objectif
+- une description
+- un coach referent
+- une capacite maximale
+- un statut actif/inactif
+- la liste des participants
+
+Ce format est utile pour:
+
+- vendre un coaching plus accessible que le 1:1
+- mieux occuper un coach
+- animer la salle avec des parcours collectifs
+
+### 6.7.9 Espace coach mobile
+
+Le role `coach` dispose d'un portail mobile dedie, pense pour une utilisation terrain.
+
+Ce portail donne acces a:
+
+- un accueil coach
+- la liste de ses membres
+- la liste de ses programmes groupes
+- ses priorites du jour
+- sa file `A traiter maintenant`
+
+Le coach n'entre pas dans tout le back-office manager; il reste dans un espace cible sur son perimetre metier.
+
+### 6.7.10 Journal de suivi
+
+Le suivi coaching ne se limite plus a l'affectation.
+
+Le coach peut ouvrir un membre et enregistrer un suivi avec:
+
+- le type d'action
+- un resume
+- la prochaine action
+- la prochaine date de relance
+
+L'historique des suivis reste visible dans la fiche membre cote coach.
+
+### 6.7.11 Feedback membre
+
+Le membre peut evaluer:
+
+- son coach actuel
+- son programme groupe actuel
+
+Le feedback comprend:
+
+- une note globale
+- l'ecoute
+- la clarte
+- la motivation
+- la disponibilite
+- un commentaire libre
+- une demande optionnelle de recontact
+
+### 6.7.12 Alertes et priorites
+
+Le systeme calcule automatiquement plusieurs alertes utiles:
+
+- `sans suivi`
+- `premier contact en retard`
+- `suivi ancien`
+- `relance en retard`
+- `feedback sensible`
+
+Un feedback est considere comme sensible si:
+
+- la note globale est inferieure ou egale a 2 sur 5
+- ou si le membre demande a etre recontacte
+
+Ces alertes alimentent:
+
+- les priorites du coach
+- la file manager `A traiter`
+
+### 6.7.13 Affecter des membres a un coach manuellement
+
+Le manager peut toujours affecter un membre manuellement depuis la fiche coach.
 
 Pour affecter un membre:
 
@@ -696,7 +877,7 @@ Pour affecter un membre:
 
 Un coach ne peut suivre que des membres de sa propre salle.
 
-### 6.7.5 Desactivation
+### 6.7.14 Desactivation
 
 La suppression d'un coach est en pratique une desactivation logique.
 
@@ -1073,9 +1254,20 @@ Dans la version actuelle:
 2. verifier les expirations proches
 3. traiter les preinscriptions
 4. controler les encaissements et le journal de caisse
-5. verifier les maintenances et les ruptures de stock
+5. ouvrir la vue `Coaches` pour traiter la file manager coaching
+6. verifier les membres sans suivi, les premiers contacts en retard et les feedbacks sensibles
+7. verifier les maintenances et les ruptures de stock
 
-## 8.3 Routine RH
+## 8.3 Routine quotidienne coach
+
+1. se connecter au portail coach mobile
+2. ouvrir `A traiter maintenant`
+3. traiter d'abord les feedbacks sensibles et les demandes de recontact
+4. enregistrer les premiers suivis en retard
+5. planifier les prochaines actions et dates de relance
+6. verifier ses programmes groupes actifs
+
+## 8.4 Routine RH
 
 1. enregistrer les presences du jour
 2. controler les absences
@@ -1083,14 +1275,14 @@ Dans la version actuelle:
 4. payer les salaires depuis le module RH
 5. verifier l'impact dans la caisse
 
-## 8.4 Routine stock
+## 8.5 Routine stock
 
 1. verifier les faibles stocks
 2. enregistrer les entrees de stock a reception
 3. corriger les ecarts de quantite si necessaire
 4. surveiller les mouvements recents
 
-## 8.5 Routine owner
+## 8.6 Routine owner
 
 1. verifier les journaux sensibles
 2. verifier les dashboards par salle

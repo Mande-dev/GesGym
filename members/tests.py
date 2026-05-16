@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from coaching.models import Coach, CoachingFeedback, GroupCoachingProgram
+from coaching.models import Coach, CoachAssignment, CoachingFeedback, GroupCoachingProgram
 from compte.models import User, UserGymRole
 from members.models import Member, MemberPreRegistration, MemberPreRegistrationLink
 from notifications.models import Notification
@@ -402,6 +402,13 @@ class MemberPortalTests(TestCase):
         self.assertEqual(response["Location"], f"{reverse('members:member_portal')}?tab=home")
         self.assertTrue(self.second_coach.members.filter(id=self.member.id).exists())
         self.assertFalse(self.coach.members.filter(id=self.member.id).exists())
+        self.assertTrue(
+            CoachAssignment.objects.filter(
+                coach=self.second_coach,
+                member=self.member,
+                ended_at__isnull=True,
+            ).exists()
+        )
 
     def test_member_can_join_group_program_from_portal(self):
         self.client.force_login(self.member.user)

@@ -13,7 +13,7 @@ from smartclub.decorators import module_required, role_required
 
 from .forms import CoachForm, CoachMemberForm, CoachingFollowUpForm, GroupCoachingProgramForm
 from .kpis import build_coaching_kpis, coaches_queryset
-from .models import Coach, CoachingFeedback, CoachingFollowUp, GroupCoachingProgram
+from .models import Coach, CoachAssignment, CoachingFeedback, CoachingFollowUp, GroupCoachingProgram
 
 
 def _validation_message(exc):
@@ -226,11 +226,15 @@ def coach_list(request):
         coaches__is_active=True,
         coaches__gym=gym,
     ).distinct().annotate(last_follow_up_at=Max("coaching_follow_ups__created_at"))
+    active_assignments = CoachAssignment.objects.filter(gym=gym, ended_at__isnull=True)
     attention_members = assigned_members.filter(last_follow_up_at__isnull=True).order_by("first_name", "last_name")[:5]
+    first_contact_overdue_member_ids = active_assignments.filter(
+        started_at__date__lte=first_contact_deadline,
+    ).values_list("member_id", flat=True)
     first_contact_overdue_members = assigned_members.filter(
-        created_at__date__lte=first_contact_deadline,
+        id__in=first_contact_overdue_member_ids,
         last_follow_up_at__isnull=True,
-    ).order_by("created_at", "first_name", "last_name")[:5]
+    ).order_by("first_name", "last_name")[:5]
     stale_follow_up_members = assigned_members.filter(
         last_follow_up_at__isnull=False,
         last_follow_up_at__date__lte=stale_follow_up_deadline,
@@ -554,6 +558,7 @@ def coach_portal(request):
     members = _coach_portal_member_queryset(request, coach).annotate(
         latest_follow_up_at=Max("coaching_follow_ups__created_at")
     )
+    active_assignments = CoachAssignment.objects.filter(gym=request.gym, coach=coach, ended_at__isnull=True)
     programs = (
         GroupCoachingProgram.objects.filter(gym=request.gym, coach=coach, is_active=True)
         .annotate(participants_total=Count("participants", distinct=True))
@@ -574,7 +579,7 @@ def coach_portal(request):
         .order_by("-wants_contact", "overall_rating", "-created_at")[:5]
     )
     first_contact_overdue_members = members.filter(
-        created_at__date__lte=first_contact_deadline,
+        id__in=active_assignments.filter(started_at__date__lte=first_contact_deadline).values_list("member_id", flat=True),
         latest_follow_up_at__isnull=True,
     )
     stale_follow_up_members = members.filter(

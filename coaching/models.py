@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 from members.models import Member
@@ -210,6 +211,61 @@ class GroupCoachingProgram(models.Model):
         self.participants.remove(member)
 
 
+class CoachAssignment(models.Model):
+    gym = models.ForeignKey(
+        Gym,
+        on_delete=models.CASCADE,
+        related_name="coach_assignments",
+        db_index=True,
+    )
+
+    coach = models.ForeignKey(
+        Coach,
+        on_delete=models.CASCADE,
+        related_name="assignments",
+    )
+
+    member = models.ForeignKey(
+        Member,
+        on_delete=models.CASCADE,
+        related_name="coach_assignments",
+    )
+
+    started_at = models.DateTimeField(auto_now_add=True)
+
+    ended_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["gym", "started_at"]),
+            models.Index(fields=["coach", "started_at"]),
+            models.Index(fields=["member", "started_at"]),
+            models.Index(fields=["gym", "ended_at"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["member"],
+                condition=Q(ended_at__isnull=True),
+                name="unique_active_coach_assignment_per_member",
+            ),
+        ]
+        ordering = ["-started_at"]
+
+    def __str__(self):
+        return f"{self.member} -> {self.coach}"
+
+    def clean(self):
+        super().clean()
+        if self.gym_id and self.member_id and self.member.gym_id != self.gym_id:
+            raise ValidationError("Le membre de l'affectation doit appartenir au meme gym.")
+        if self.gym_id and self.coach_id and self.coach.gym_id != self.gym_id:
+            raise ValidationError("Le coach de l'affectation doit appartenir au meme gym.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
 class CoachingFollowUp(models.Model):
     INTERACTION_CALL = "call"
     INTERACTION_MESSAGE = "message"
@@ -377,12 +433,37 @@ class CoachingFeedback(models.Model):
 
 @receiver(m2m_changed, sender=Coach.members.through)
 def validate_coach_members(sender, instance, action, pk_set, **kwargs):
-    if action != "pre_add" or not pk_set:
-        return
+    if action == "pre_add" and pk_set:
+        invalid_members = Member.objects.filter(id__in=pk_set).exclude(gym=instance.gym)
+        if invalid_members.exists():
+            raise ValidationError("Un coach ne peut suivre que les membres de son gym.")
 
-    invalid_members = Member.objects.filter(id__in=pk_set).exclude(gym=instance.gym)
-    if invalid_members.exists():
-        raise ValidationError("Un coach ne peut suivre que les membres de son gym.")
+    if action == "post_add" and pk_set:
+        active_assignments = CoachAssignment.objects.filter(
+            member_id__in=pk_set,
+            ended_at__isnull=True,
+        ).exclude(coach=instance)
+        active_assignments.update(ended_at=models.functions.Now())
+
+        for member_id in pk_set:
+            existing_assignment = CoachAssignment.objects.filter(
+                coach=instance,
+                member_id=member_id,
+                ended_at__isnull=True,
+            ).first()
+            if not existing_assignment:
+                CoachAssignment.objects.create(
+                    gym=instance.gym,
+                    coach=instance,
+                    member_id=member_id,
+                )
+
+    if action == "post_remove" and pk_set:
+        CoachAssignment.objects.filter(
+            coach=instance,
+            member_id__in=pk_set,
+            ended_at__isnull=True,
+        ).update(ended_at=models.functions.Now())
 
 
 @receiver(m2m_changed, sender=GroupCoachingProgram.participants.through)

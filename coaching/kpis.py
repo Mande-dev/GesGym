@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from members.models import Member
 
-from .models import Coach, CoachingFeedback, CoachingFollowUp
+from .models import Coach, CoachAssignment, CoachingFeedback, CoachingFollowUp
 
 
 def coaches_queryset(gym):
@@ -27,6 +27,7 @@ def build_coaching_kpis(gym, period_data=None):
     active_members = Member.objects.filter(gym=gym, is_active=True)
     assigned_member_ids = active_coaches.values_list("members__id", flat=True)
     assigned_members = active_members.filter(id__in=assigned_member_ids).distinct()
+    active_assignments = CoachAssignment.objects.filter(gym=gym, ended_at__isnull=True)
     new_coaches_period = coaches.filter(
         created_at__date__range=(period_data["start_date"], period_data["end_date"])
     ).count()
@@ -57,9 +58,10 @@ def build_coaching_kpis(gym, period_data=None):
     )
     members_with_follow_up = CoachingFollowUp.objects.filter(gym=gym).values_list("member_id", flat=True)
     members_without_follow_up = assigned_members.exclude(id__in=members_with_follow_up).count()
-    first_contact_overdue_count = assigned_members.filter(
-        created_at__date__lte=first_contact_deadline,
-    ).exclude(id__in=members_with_follow_up).count()
+    first_contact_overdue_count = active_assignments.filter(
+        started_at__date__lte=first_contact_deadline,
+        member_id__in=assigned_members.values_list("id", flat=True),
+    ).exclude(member_id__in=members_with_follow_up).count()
     stale_follow_up_members_count = assigned_members.filter(
         coaching_follow_ups__created_at__date__lte=stale_follow_up_deadline,
     ).exclude(id__in=CoachingFollowUp.objects.filter(

@@ -8,7 +8,7 @@ from compte.models import User, UserGymRole
 from members.models import Member
 from organizations.models import Gym, GymModule, Module, Organization
 
-from .models import Coach, CoachingFeedback, CoachingFollowUp, GroupCoachingProgram
+from .models import Coach, CoachAssignment, CoachingFeedback, CoachingFollowUp, GroupCoachingProgram
 
 
 class CoachingTenantTests(TestCase):
@@ -105,6 +105,13 @@ class CoachingTenantTests(TestCase):
 
         self.assertRedirects(response, reverse("coaching:detail", args=[self.coach_a.id]))
         self.assertTrue(self.coach_a.members.filter(id=self.member_a.id).exists())
+        self.assertTrue(
+            CoachAssignment.objects.filter(
+                coach=self.coach_a,
+                member=self.member_a,
+                ended_at__isnull=True,
+            ).exists()
+        )
 
     def test_assign_member_rejects_other_gym_member(self):
         response = self.client.post(
@@ -128,6 +135,13 @@ class CoachingTenantTests(TestCase):
 
         self.assertRedirects(response, reverse("coaching:detail", args=[self.coach_a.id]))
         self.assertFalse(self.coach_a.members.filter(id=self.member_a.id).exists())
+        self.assertFalse(
+            CoachAssignment.objects.filter(
+                coach=self.coach_a,
+                member=self.member_a,
+                ended_at__isnull=True,
+            ).exists()
+        )
 
     def test_form_pages_render_without_gym_id_urls(self):
         urls = [
@@ -257,7 +271,9 @@ class CoachingTenantTests(TestCase):
         self.client.logout()
         self.client.login(username="coach-mobile", password="test-pass")
         self.coach_a.members.add(self.member_a)
-        Member.objects.filter(id=self.member_a.id).update(created_at=timezone.now() - timedelta(days=5))
+        CoachAssignment.objects.filter(coach=self.coach_a, member=self.member_a, ended_at__isnull=True).update(
+            started_at=timezone.now() - timedelta(days=5)
+        )
 
         response = self.client.get(reverse("coaching:coach_portal"))
 
@@ -315,7 +331,9 @@ class CoachingTenantTests(TestCase):
 
     def test_manager_dashboard_shows_follow_up_alerts(self):
         self.coach_a.members.add(self.member_a)
-        Member.objects.filter(id=self.member_a.id).update(created_at=timezone.now() - timedelta(days=5))
+        CoachAssignment.objects.filter(coach=self.coach_a, member=self.member_a, ended_at__isnull=True).update(
+            started_at=timezone.now() - timedelta(days=5)
+        )
         CoachingFollowUp.objects.create(
             gym=self.gym_a,
             coach=self.coach_a,
@@ -335,7 +353,9 @@ class CoachingTenantTests(TestCase):
 
     def test_manager_dashboard_shows_first_contact_and_stale_follow_up_alerts(self):
         self.coach_a.members.add(self.member_a)
-        Member.objects.filter(id=self.member_a.id).update(created_at=timezone.now() - timedelta(days=20))
+        CoachAssignment.objects.filter(coach=self.coach_a, member=self.member_a, ended_at__isnull=True).update(
+            started_at=timezone.now() - timedelta(days=20)
+        )
         old_follow_up = CoachingFollowUp.objects.create(
             gym=self.gym_a,
             coach=self.coach_a,
@@ -416,3 +436,25 @@ class CoachingTenantTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "File manager a traiter")
         self.assertContains(response, "Sujet a escalader")
+
+    def test_reassigning_member_closes_old_assignment_and_opens_new_one(self):
+        self.coach_a.members.add(self.member_a)
+        old_assignment = CoachAssignment.objects.get(coach=self.coach_a, member=self.member_a, ended_at__isnull=True)
+        self.coach_a.members.remove(self.member_a)
+        self.coach_b = Coach.objects.create(
+            gym=self.gym_a,
+            name="Coach C",
+            phone="3000",
+            specialty="Cardio",
+        )
+        self.coach_b.members.add(self.member_a)
+
+        old_assignment.refresh_from_db()
+        self.assertIsNotNone(old_assignment.ended_at)
+        self.assertTrue(
+            CoachAssignment.objects.filter(
+                coach=self.coach_b,
+                member=self.member_a,
+                ended_at__isnull=True,
+            ).exists()
+        )
