@@ -38,7 +38,23 @@ Verifier le projet :
 ```powershell
 .\.venv\Scripts\python.exe manage.py check
 .\.venv\Scripts\python.exe manage.py check --deploy
-.\.venv\Scripts\python.exe manage.py test
+.\run_tests.ps1
+```
+
+## Tests non interactifs
+
+Pour eviter les problemes de base de test PostgreSQL locale deja creee, le depot
+fournit un settings de test dedie base sur SQLite.
+
+```powershell
+.\run_tests.ps1
+```
+
+Exemples :
+
+```powershell
+.\run_tests.ps1 members
+.\run_tests.ps1 organizations.tests website.tests
 ```
 
 ## Variables d'environnement de production

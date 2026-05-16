@@ -36,3 +36,15 @@ class PublicRouteTests(TestCase):
         response = self.client.get("/")
 
         self.assertContains(response, "script_accueil.js?v=landing-v1-member-messaging")
+
+    def test_health_route_returns_plain_ok(self):
+        response = self.client.get("/health/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/plain")
+        self.assertEqual(response.content.decode("utf-8"), "ok")
+
+    def test_root_route_uses_public_landing_template(self):
+        response = self.client.get("/")
+
+        self.assertTemplateUsed(response, "compte/accueil.html")

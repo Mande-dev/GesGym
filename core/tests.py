@@ -262,7 +262,8 @@ class AccountingReportExportTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf-8")
-        self.assertIn("Parametres V1", content)
+        self.assertIn("Paramètres", content)
+        self.assertIn("Gerer l'organisation", content)
         self.assertIn("Utilisateurs & roles", content)
         self.assertIn("Journal d'activite sensible", content)
 
