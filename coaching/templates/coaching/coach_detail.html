@@ -110,7 +110,7 @@
 </style>
 
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="coach-stat-card p-3">
             <div class="d-flex align-items-center gap-3">
                 <div class="icon-box" style="background: rgba(13, 110, 253, 0.08); color:#0d6efd;">
@@ -124,7 +124,7 @@
         </div>
     </div>
 
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="coach-stat-card p-3">
             <div class="d-flex align-items-center gap-3">
                 <div class="icon-box" style="background: rgba(25, 135, 84, 0.08); color:#198754;">
@@ -138,7 +138,7 @@
         </div>
     </div>
 
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="coach-stat-card p-3">
             <div class="d-flex align-items-center gap-3">
                 <div class="icon-box" style="background: rgba(255, 193, 7, 0.12); color:#b78103;">
@@ -147,6 +147,35 @@
                 <div>
                     <div class="fs-12 text-muted">Ajouté le</div>
                     <h4 class="mb-0">{{ coach.created_at|date:"d/m/Y" }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="coach-stat-card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon-box" style="background: rgba(220, 53, 69, 0.08); color:#dc3545;">
+                    <span class="material-icons">schedule</span>
+                </div>
+                <div>
+                    <div class="fs-12 text-muted">Relances en retard</div>
+                    <h4 class="mb-0">{{ overdue_follow_ups_count }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="coach-stat-card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon-box" style="background: rgba(255, 140, 0, 0.10); color:#d97706;">
+                    <span class="material-icons">star</span>
+                </div>
+                <div>
+                    <div class="fs-12 text-muted">Satisfaction</div>
+                    <h4 class="mb-0">{{ feedback_average }}/5</h4>
+                    <small class="text-muted">{{ feedback_count }} avis</small>
                 </div>
             </div>
         </div>
@@ -184,6 +213,21 @@
             <div class="info-line">
                 <strong>Membres suivis :</strong><br>
                 <span class="text-muted">{{ members.count }}</span>
+            </div>
+
+            <div class="info-line">
+                <strong>Dernier suivi trace :</strong><br>
+                <span class="text-muted">{% if last_follow_up %}{{ last_follow_up.created_at|date:"d/m/Y H:i" }}{% else %}Aucun suivi enregistre{% endif %}</span>
+            </div>
+
+            <div class="info-line">
+                <strong>Suivis enregistres :</strong><br>
+                <span class="text-muted">{{ follow_ups_count }}</span>
+            </div>
+
+            <div class="info-line">
+                <strong>Demandes de recontact :</strong><br>
+                <span class="text-muted">{{ contact_requested_count }}</span>
             </div>
         </div>
     </div>
@@ -268,6 +312,44 @@
                     <p class="mt-3 mb-1 fw-semibold text-muted">Aucun membre assigné</p>
                     <small class="text-muted">Les membres suivis par ce coach apparaîtront ici.</small>
                 </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="coach-member-card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0 d-flex align-items-center gap-2">
+                    <span class="material-icons">reviews</span>
+                    Derniers feedbacks membres
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if feedbacks %}
+                    <div class="d-grid gap-3">
+                        {% for feedback in feedbacks %}
+                            <div class="border rounded-4 p-3">
+                                <div class="d-flex justify-content-between align-items-start gap-3">
+                                    <div>
+                                        <div class="fw-semibold">{{ feedback.member.first_name }} {{ feedback.member.last_name }}</div>
+                                        <small class="text-muted">{{ feedback.created_at|date:"d/m/Y H:i" }}{% if feedback.group_program %} - {{ feedback.group_program.name }}{% endif %}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge text-bg-light border">{{ feedback.overall_rating }}/5</span>
+                                        {% if feedback.wants_contact %}
+                                            <div class="mt-2"><span class="badge text-bg-danger">A rappeler</span></div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% if feedback.comment %}
+                                    <div class="text-muted mt-2">{{ feedback.comment }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <small class="text-muted">Aucun feedback membre n'a encore ete enregistre pour ce coach.</small>
+                    </div>
                 {% endif %}
             </div>
         </div>

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block page_titre %}Desactiver programme groupe{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card mt-4">
+            <div class="card-body">
+                <h4 class="mb-3">Desactiver le programme</h4>
+                <p class="text-muted">Confirmer la desactivation de <strong>{{ program.name }}</strong> ? Les inscriptions actuelles seront conservees.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger">Desactiver</button>
+                        <a href="{% url 'coaching:group_program_list' %}" class="btn btn-light">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

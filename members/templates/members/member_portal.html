@@ -206,6 +206,222 @@
                 {% elif coaching_rights.has_any_access %}
                     <p class="empty-state">Aucun coach n'est encore rattache a votre compte.</p>
                 {% endif %}
+
+                {% if selected_group_programs %}
+                    <div class="coach-list">
+                        {% for program in selected_group_programs %}
+                            <article class="coach-card">
+                                <div class="coach-avatar">G</div>
+                                <div>
+                                    <strong>{{ program.name }}</strong>
+                                    <small>{{ program.objective|default:"Programme groupe" }} - Coach {{ program.coach.name }}</small>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% elif can_choose_group_program %}
+                    <p class="empty-state">Aucun programme groupe n'est encore rattache a votre compte.</p>
+                {% endif %}
+
+                {% if coaches %}
+                    <div class="section-heading" style="margin-top: 1.5rem;">
+                        <div>
+                            <p class="eyebrow">Qualite</p>
+                            <h2>Evaluer mon coach</h2>
+                            <small>Votre avis aide la salle a maintenir un bon niveau d'accompagnement.</small>
+                        </div>
+                    </div>
+
+                    {% if latest_coach_feedback %}
+                        <div class="pending-box">
+                            <strong>Dernier avis coach</strong>
+                            <small>{{ latest_coach_feedback.coach.name }} - {{ latest_coach_feedback.overall_rating }}/5{% if latest_coach_feedback.comment %} - {{ latest_coach_feedback.comment|truncatechars:90 }}{% endif %}</small>
+                        </div>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'members:member_submit_coaching_feedback' %}" class="member-password-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="feedback_kind" value="coach">
+                        <input type="hidden" name="coach_id" value="{{ current_coach_id }}">
+                        <label class="form-field">
+                            <span>{{ coach_feedback_form.overall_rating.label }}</span>
+                            {{ coach_feedback_form.overall_rating }}
+                        </label>
+                        <label class="form-field">
+                            <span>{{ coach_feedback_form.listening_rating.label }}</span>
+                            {{ coach_feedback_form.listening_rating }}
+                        </label>
+                        <label class="form-field">
+                            <span>{{ coach_feedback_form.clarity_rating.label }}</span>
+                            {{ coach_feedback_form.clarity_rating }}
+                        </label>
+                        <label class="form-field">
+                            <span>{{ coach_feedback_form.motivation_rating.label }}</span>
+                            {{ coach_feedback_form.motivation_rating }}
+                        </label>
+                        <label class="form-field">
+                            <span>{{ coach_feedback_form.availability_rating.label }}</span>
+                            {{ coach_feedback_form.availability_rating }}
+                        </label>
+                        <label class="form-field">
+                            <span>{{ coach_feedback_form.comment.label }}</span>
+                            {{ coach_feedback_form.comment }}
+                        </label>
+                        <label class="form-field" style="display:flex; align-items:center; gap:10px;">
+                            {{ coach_feedback_form.wants_contact }}
+                            <span>{{ coach_feedback_form.wants_contact.label }}</span>
+                        </label>
+                        <button type="submit" class="install-button">Envoyer mon avis coach</button>
+                    </form>
+                {% endif %}
+
+                {% if selected_group_programs %}
+                    <div class="section-heading" style="margin-top: 1.5rem;">
+                        <div>
+                            <p class="eyebrow">Qualite</p>
+                            <h2>Evaluer mon programme groupe</h2>
+                            <small>Votre retour aide la salle a ameliorer l'experience collective.</small>
+                        </div>
+                    </div>
+
+                    {% if latest_group_feedback %}
+                        <div class="pending-box">
+                            <strong>Dernier avis programme</strong>
+                            <small>{{ latest_group_feedback.group_program.name }} - {{ latest_group_feedback.overall_rating }}/5{% if latest_group_feedback.comment %} - {{ latest_group_feedback.comment|truncatechars:90 }}{% endif %}</small>
+                        </div>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'members:member_submit_coaching_feedback' %}" class="member-password-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="feedback_kind" value="group_program">
+                        <input type="hidden" name="coach_id" value="{{ selected_group_programs.0.coach_id }}">
+                        <input type="hidden" name="program_id" value="{{ current_group_program_id }}">
+                        <label class="form-field">
+                            <span>{{ group_feedback_form.overall_rating.label }}</span>
+                            {{ group_feedback_form.overall_rating }}
+                        </label>
+                        <label class="form-field">
+                            <span>{{ group_feedback_form.listening_rating.label }}</span>
+                            {{ group_feedback_form.listening_rating }}
+                        </label>
+                        <label class="form-field">
+                            <span>{{ group_feedback_form.clarity_rating.label }}</span>
+                            {{ group_feedback_form.clarity_rating }}
+                        </label>
+                        <label class="form-field">
+                            <span>{{ group_feedback_form.motivation_rating.label }}</span>
+                            {{ group_feedback_form.motivation_rating }}
+                        </label>
+                        <label class="form-field">
+                            <span>{{ group_feedback_form.availability_rating.label }}</span>
+                            {{ group_feedback_form.availability_rating }}
+                        </label>
+                        <label class="form-field">
+                            <span>{{ group_feedback_form.comment.label }}</span>
+                            {{ group_feedback_form.comment }}
+                        </label>
+                        <label class="form-field" style="display:flex; align-items:center; gap:10px;">
+                            {{ group_feedback_form.wants_contact }}
+                            <span>{{ group_feedback_form.wants_contact.label }}</span>
+                        </label>
+                        <button type="submit" class="install-button">Envoyer mon avis programme</button>
+                    </form>
+                {% endif %}
+
+                {% if can_choose_individual_coach %}
+                    <div class="section-heading" style="margin-top: 1.5rem;">
+                        <div>
+                            <p class="eyebrow">Choix membre</p>
+                            <h2>Choisir mon coach</h2>
+                            <small>Le coach choisi devient votre coach referent visible par la salle.</small>
+                        </div>
+                    </div>
+
+                    {% if available_coaches %}
+                        <div class="plan-list">
+                            {% for coach_option in available_coaches %}
+                                <article class="plan-card {% if coach_option.id == current_coach_id %}is-current{% endif %}">
+                                    <div class="plan-main">
+                                        <div class="plan-title-row">
+                                            <strong>{{ coach_option.name }}</strong>
+                                            {% if coach_option.id == current_coach_id %}
+                                                <span class="plan-badge current">Selectionne</span>
+                                            {% endif %}
+                                        </div>
+                                        <p>{{ coach_option.specialty|default:"Coach sportif" }}</p>
+                                        <ul class="plan-benefits" aria-label="Informations coach">
+                                            <li>{% if coach_option.phone %}{{ coach_option.phone }}{% else %}Telephone non renseigne{% endif %}</li>
+                                            <li>{{ coach_option.member_count }} membre{{ coach_option.member_count|pluralize }} suivi{{ coach_option.member_count|pluralize }}</li>
+                                        </ul>
+                                    </div>
+                                    <div class="plan-action">
+                                        {% if coach_option.id == current_coach_id %}
+                                            <button type="button" class="action-button muted" disabled>Coach actuel</button>
+                                        {% else %}
+                                            <form method="post" action="{% url 'members:member_choose_coach' %}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="coach_id" value="{{ coach_option.id }}">
+                                                <button type="submit" class="action-button">Choisir ce coach</button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Aucun coach actif n'est disponible pour le moment.</p>
+                    {% endif %}
+                {% endif %}
+
+                {% if can_choose_group_program %}
+                    <div class="section-heading" style="margin-top: 1.5rem;">
+                        <div>
+                            <p class="eyebrow">Choix membre</p>
+                            <h2>Rejoindre un programme groupe</h2>
+                            <small>Vous pouvez choisir un programme collectif compatible avec votre formule.</small>
+                        </div>
+                    </div>
+
+                    {% if available_group_programs %}
+                        <div class="plan-list">
+                            {% for program_option in available_group_programs %}
+                                <article class="plan-card {% if program_option.id == current_group_program_id %}is-current{% endif %}">
+                                    <div class="plan-main">
+                                        <div class="plan-title-row">
+                                            <strong>{{ program_option.name }}</strong>
+                                            {% if program_option.id == current_group_program_id %}
+                                                <span class="plan-badge current">Selectionne</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if program_option.description %}
+                                            <p>{{ program_option.description }}</p>
+                                        {% endif %}
+                                        <ul class="plan-benefits" aria-label="Informations programme">
+                                            <li>{{ program_option.objective|default:"Objectif a definir" }}</li>
+                                            <li>Coach {{ program_option.coach.name }}</li>
+                                            <li>{{ program_option.participants_total }}/{{ program_option.capacity }} participant{{ program_option.capacity|pluralize }}</li>
+                                        </ul>
+                                    </div>
+                                    <div class="plan-action">
+                                        {% if program_option.id == current_group_program_id %}
+                                            <button type="button" class="action-button muted" disabled>Programme actuel</button>
+                                        {% elif program_option.participants_total >= program_option.capacity %}
+                                            <button type="button" class="action-button muted" disabled>Complet</button>
+                                        {% else %}
+                                            <form method="post" action="{% url 'members:member_choose_group_program' %}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="program_id" value="{{ program_option.id }}">
+                                                <button type="submit" class="action-button">Rejoindre ce programme</button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Aucun programme groupe actif n'est disponible pour le moment.</p>
+                    {% endif %}
+                {% endif %}
             </section>
 
             <section class="content-panel">

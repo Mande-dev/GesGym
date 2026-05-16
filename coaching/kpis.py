@@ -1,11 +1,12 @@
+from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import Count
+from django.db.models import Avg, Count, Max, Q
 from django.utils import timezone
 
 from members.models import Member
 
-from .models import Coach
+from .models import Coach, CoachingFeedback, CoachingFollowUp
 
 
 def coaches_queryset(gym):
@@ -14,6 +15,8 @@ def coaches_queryset(gym):
 
 def build_coaching_kpis(gym, period_data=None):
     today = timezone.localdate()
+    first_contact_deadline = today - timedelta(days=3)
+    stale_follow_up_deadline = today - timedelta(days=14)
     period_data = period_data or {
         "start_date": today.replace(day=1),
         "end_date": today,
@@ -28,9 +31,57 @@ def build_coaching_kpis(gym, period_data=None):
         created_at__date__range=(period_data["start_date"], period_data["end_date"])
     ).count()
     top_coaches = (
-        active_coaches.annotate(member_count=Count("members", distinct=True))
+        active_coaches.annotate(
+            member_count=Count("members", distinct=True),
+            last_follow_up_at=Max("follow_ups__created_at"),
+            feedback_average=Avg("feedbacks__overall_rating"),
+            feedback_count=Count("feedbacks", distinct=True),
+            overdue_follow_ups=Count(
+                "follow_ups",
+                filter=Q(follow_ups__next_follow_up_at__isnull=False, follow_ups__next_follow_up_at__lte=today),
+                distinct=True,
+            ),
+        )
         .filter(member_count__gt=0)
         .order_by("-member_count", "name")[:5]
+    )
+    members_with_follow_up = CoachingFollowUp.objects.filter(gym=gym).values_list("member_id", flat=True)
+    members_without_follow_up = assigned_members.exclude(id__in=members_with_follow_up).count()
+    first_contact_overdue_count = assigned_members.filter(
+        created_at__date__lte=first_contact_deadline,
+    ).exclude(id__in=members_with_follow_up).count()
+    stale_follow_up_members_count = assigned_members.filter(
+        coaching_follow_ups__created_at__date__lte=stale_follow_up_deadline,
+    ).exclude(id__in=CoachingFollowUp.objects.filter(
+        gym=gym,
+        created_at__date__gt=stale_follow_up_deadline,
+    ).values_list("member_id", flat=True)).distinct().count()
+    overdue_follow_ups_count = CoachingFollowUp.objects.filter(
+        gym=gym,
+        next_follow_up_at__isnull=False,
+        next_follow_up_at__lte=today,
+    ).count()
+    recent_follow_ups_count = CoachingFollowUp.objects.filter(
+        gym=gym,
+        created_at__date__range=(period_data["start_date"], period_data["end_date"]),
+    ).count()
+    feedback_average = CoachingFeedback.objects.filter(gym=gym).aggregate(value=Avg("overall_rating"))["value"]
+    feedback_count = CoachingFeedback.objects.filter(gym=gym).count()
+    contact_requested_count = CoachingFeedback.objects.filter(gym=gym, wants_contact=True).count()
+    most_exposed_coaches = (
+        active_coaches.annotate(
+            member_count=Count("members", distinct=True),
+            overdue_follow_ups=Count(
+                "follow_ups",
+                filter=Q(follow_ups__next_follow_up_at__isnull=False, follow_ups__next_follow_up_at__lte=today),
+                distinct=True,
+            ),
+            last_follow_up_at=Max("follow_ups__created_at"),
+            feedback_average=Avg("feedbacks__overall_rating"),
+            feedback_count=Count("feedbacks", distinct=True),
+        )
+        .filter(Q(member_count__gt=0) | Q(overdue_follow_ups__gt=0))
+        .order_by("-overdue_follow_ups", "last_follow_up_at", "name")[:5]
     )
     total_active_coaches = active_coaches.count()
     assigned_count = assigned_members.count()
@@ -46,9 +97,18 @@ def build_coaching_kpis(gym, period_data=None):
         "inactive_coaches": coaches.filter(is_active=False).count(),
         "assigned_members_count": assigned_count,
         "unassigned_members_count": active_members.exclude(id__in=assigned_member_ids).count(),
+        "members_without_follow_up_count": members_without_follow_up,
+        "first_contact_overdue_count": first_contact_overdue_count,
+        "stale_follow_up_members_count": stale_follow_up_members_count,
+        "overdue_follow_ups_count": overdue_follow_ups_count,
+        "recent_follow_ups_count": recent_follow_ups_count,
+        "feedback_average": round(feedback_average or 0, 1),
+        "feedback_count": feedback_count,
+        "contact_requested_count": contact_requested_count,
         "average_members_per_coach": average_members,
         "new_coaches_period": new_coaches_period,
         "top_coaches": top_coaches,
+        "most_exposed_coaches": most_exposed_coaches,
         "coaching_status_chart_labels": ["Actifs", "Inactifs"],
         "coaching_status_chart_values": [
             total_active_coaches,

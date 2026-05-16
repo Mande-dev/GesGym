@@ -519,16 +519,21 @@ class Command(BaseCommand):
             (f"Coach Principal {gym_key.title()}", "Musculation"),
             (f"Coach Cardio {gym_key.title()}", "Cardio"),
         ]
+        coach_user = UserGymRole.objects.filter(gym=gym, role="coach", is_active=True).select_related("user").first()
         for index, (name, specialty) in enumerate(coach_specs):
             coach, _ = Coach.objects.update_or_create(
                 gym=gym,
                 name=name,
                 defaults={
+                    "user": coach_user.user if coach_user and index == 0 else None,
                     "phone": f"899{gym.id:03d}{index:03d}",
                     "specialty": specialty,
                     "is_active": True,
                 },
             )
+            if coach_user and index == 0 and coach.user_id != coach_user.user_id:
+                coach.user = coach_user.user
+                coach.save(update_fields=["user"])
             coach.members.clear()
             for member in members[index::2][:4]:
                 coach.assign_member(member)

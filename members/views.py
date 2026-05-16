@@ -8,7 +8,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import redirect
 from django.db.models import Q, Exists, OuterRef, Count
 from django.core.paginator import Paginator
@@ -17,7 +17,8 @@ from django.templatetags.static import static
 from django.views.decorators.http import require_POST
 import qrcode
 from access.models import AccessLog
-from coaching.models import Coach
+from coaching.forms import CoachingFeedbackForm
+from coaching.models import Coach, CoachingFeedback, GroupCoachingProgram
 from smartclub.access_control import MEMBER_ADMIN_ROLES, MEMBER_ROLES, has_role
 from .forms import MemberCreationForm
 from .models import Member, MemberPreRegistration, MemberPreRegistrationLink
@@ -92,6 +93,14 @@ def _member_coaching_rights(subscription):
     }
 
 
+def _member_can_choose_individual_coach(member, subscription):
+    return bool(subscription and subscription.plan and subscription.plan.allows_individual_coaching and member.is_active)
+
+
+def _member_can_choose_group_program(member, subscription):
+    return bool(subscription and subscription.plan and subscription.plan.allows_group_coaching and member.is_active)
+
+
 def _member_tab_config(unread_notification_count):
     badge = str(unread_notification_count) if unread_notification_count else ""
     return [
@@ -100,6 +109,10 @@ def _member_tab_config(unread_notification_count):
         {"key": "subscription", "label": "Abonnement", "icon": "subscription"},
         {"key": "plans", "label": "Formules", "icon": "plans"},
     ]
+
+
+def _build_feedback_form(prefix):
+    return CoachingFeedbackForm(prefix=prefix)
 
 
 @login_required
@@ -132,6 +145,11 @@ def member_portal(request):
         members=member,
         is_active=True,
     ).order_by("name")
+    selected_group_programs = GroupCoachingProgram.objects.filter(
+        gym=member.gym,
+        participants=member,
+        is_active=True,
+    ).select_related("coach").order_by("name")
     member_notifications = Notification.objects.filter(
         gym=member.gym,
         member=member,
@@ -158,6 +176,15 @@ def member_portal(request):
         default=0,
     )
     available_plans = available_plans_queryset.order_by("-total_sales_count", "price", "duration_days", "name")
+    available_coaches = Coach.objects.filter(gym=member.gym, is_active=True).annotate(
+        member_count=Count("members", distinct=True)
+    ).order_by("name")
+    available_group_programs = (
+        GroupCoachingProgram.objects.filter(gym=member.gym, is_active=True)
+        .select_related("coach")
+        .annotate(participants_total=Count("participants", distinct=True))
+        .order_by("name")
+    )
     pending_requests = SubscriptionRequest.objects.filter(
         gym=member.gym,
         member=member,
@@ -194,6 +221,19 @@ def member_portal(request):
         )
 
     password_form = PasswordChangeForm(user=request.user)
+    coach_feedback_form = _build_feedback_form("coach-feedback")
+    group_feedback_form = _build_feedback_form("group-feedback")
+    latest_coach_feedback = CoachingFeedback.objects.filter(
+        gym=member.gym,
+        member=member,
+        coach__in=coaches,
+        group_program__isnull=True,
+    ).select_related("coach").first()
+    latest_group_feedback = CoachingFeedback.objects.filter(
+        gym=member.gym,
+        member=member,
+        group_program__in=selected_group_programs,
+    ).select_related("coach", "group_program").first()
 
     context = {
         "member": member,
@@ -211,6 +251,9 @@ def member_portal(request):
         "granted_access_count": granted_access_count,
         "denied_access_count": denied_access_count,
         "coaches": coaches,
+        "current_coach_id": coaches.first().id if coaches.exists() else None,
+        "selected_group_programs": selected_group_programs,
+        "current_group_program_id": selected_group_programs.first().id if selected_group_programs.exists() else None,
         "member_notifications": member_notifications_list,
         "unread_notifications": unread_notifications[:5],
         "recent_notifications": read_notifications[:6],
@@ -219,6 +262,10 @@ def member_portal(request):
         "member_tabs": member_tabs,
         "active_tab": active_tab,
         "available_plans": available_plans,
+        "available_coaches": available_coaches,
+        "available_group_programs": available_group_programs,
+        "can_choose_individual_coach": _member_can_choose_individual_coach(member, subscription),
+        "can_choose_group_program": _member_can_choose_group_program(member, subscription),
         "top_plan_sales_count": top_plan_sales_count,
         "pending_requests": pending_requests,
         "pending_plan_ids": pending_plan_ids,
@@ -228,11 +275,62 @@ def member_portal(request):
         "status_class": _status_class(status),
         "days_remaining": member.days_remaining,
         "password_form": password_form,
+        "coach_feedback_form": coach_feedback_form,
+        "group_feedback_form": group_feedback_form,
+        "latest_coach_feedback": latest_coach_feedback,
+        "latest_group_feedback": latest_group_feedback,
         "pwa_manifest_url": reverse("members:member_app_manifest"),
         "pwa_service_worker_url": reverse("members:member_app_service_worker"),
         "coaching_rights": _member_coaching_rights(subscription),
     }
     return render(request, "members/member_portal.html", context)
+
+
+@login_required
+@require_POST
+def member_submit_coaching_feedback(request):
+    current_member = _get_current_member(request.user)
+    if not current_member:
+        raise PermissionDenied
+
+    member = get_object_or_404(
+        Member.objects.select_related("gym"),
+        id=current_member.id,
+        user=request.user,
+    )
+    feedback_kind = request.POST.get("feedback_kind")
+    coach_id = request.POST.get("coach_id")
+    program_id = request.POST.get("program_id")
+    form_prefix = "group-feedback" if feedback_kind == "group_program" else "coach-feedback"
+    form = CoachingFeedbackForm(request.POST, prefix=form_prefix)
+
+    if not form.is_valid():
+        messages.error(request, "Votre avis n'a pas pu etre enregistre. Verifiez les notes renseignees.")
+        return redirect(f"{reverse('members:member_portal')}?tab=home")
+
+    coach = get_object_or_404(Coach, id=coach_id, gym=member.gym, is_active=True)
+    feedback = form.save(commit=False)
+    feedback.gym = member.gym
+    feedback.member = member
+    feedback.coach = coach
+
+    if feedback_kind == "group_program":
+        group_program = get_object_or_404(
+            GroupCoachingProgram.objects.select_related("coach"),
+            id=program_id,
+            gym=member.gym,
+            is_active=True,
+        )
+        feedback.group_program = group_program
+
+    try:
+        feedback.save()
+    except ValidationError as exc:
+        messages.error(request, exc.messages[0] if getattr(exc, "messages", None) else str(exc))
+        return redirect(f"{reverse('members:member_portal')}?tab=home")
+
+    messages.success(request, "Merci, votre avis coaching a bien ete enregistre.")
+    return redirect(f"{reverse('members:member_portal')}?tab=home")
 
 
 @login_required
@@ -303,6 +401,75 @@ def member_subscription_request(request):
         "Demande de souscription enregistree. Le paiement sera finalise quand le module de paiement sera branche.",
     )
     return redirect(f"{reverse('members:member_portal')}?tab=plans")
+
+
+@login_required
+@require_POST
+def member_choose_coach(request):
+    current_member = _get_current_member(request.user)
+    if not current_member:
+        raise PermissionDenied
+
+    member = get_object_or_404(
+        Member.objects.select_related("gym"),
+        id=current_member.id,
+        user=request.user,
+    )
+    subscription = member.active_subscription
+    if not _member_can_choose_individual_coach(member, subscription):
+        messages.error(request, "Votre formule actuelle ne permet pas de choisir un coach individuel.")
+        return redirect(f"{reverse('members:member_portal')}?tab=home")
+
+    coach = get_object_or_404(
+        Coach,
+        id=request.POST.get("coach_id"),
+        gym=member.gym,
+        is_active=True,
+    )
+
+    for existing_coach in Coach.objects.filter(gym=member.gym, members=member).exclude(id=coach.id):
+        existing_coach.members.remove(member)
+    coach.members.add(member)
+
+    messages.success(request, f"{coach.name} est maintenant votre coach referent.")
+    return redirect(f"{reverse('members:member_portal')}?tab=home")
+
+
+@login_required
+@require_POST
+def member_choose_group_program(request):
+    current_member = _get_current_member(request.user)
+    if not current_member:
+        raise PermissionDenied
+
+    member = get_object_or_404(
+        Member.objects.select_related("gym"),
+        id=current_member.id,
+        user=request.user,
+    )
+    subscription = member.active_subscription
+    if not _member_can_choose_group_program(member, subscription):
+        messages.error(request, "Votre formule actuelle ne permet pas de rejoindre un programme groupe.")
+        return redirect(f"{reverse('members:member_portal')}?tab=home")
+
+    program = get_object_or_404(
+        GroupCoachingProgram.objects.select_related("coach"),
+        id=request.POST.get("program_id"),
+        gym=member.gym,
+        is_active=True,
+    )
+
+    try:
+        program.join_member(member)
+    except ValidationError as exc:
+        messages.error(request, exc.messages[0] if getattr(exc, "messages", None) else str(exc))
+        return redirect(f"{reverse('members:member_portal')}?tab=home")
+
+    for existing_program in GroupCoachingProgram.objects.filter(gym=member.gym, participants=member).exclude(id=program.id):
+        existing_program.participants.remove(member)
+
+    messages.success(request, f'Vous avez rejoint le programme "{program.name}".')
+    return redirect(f"{reverse('members:member_portal')}?tab=home")
 
 
 @login_required

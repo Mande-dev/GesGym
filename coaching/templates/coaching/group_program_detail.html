@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block page_titre %}Detail programme groupe{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title d-flex align-items-center gap-2">
+            <span class="material-icons text-primary" style="font-size:28px;">groups</span>
+            <div>
+                <h5 class="mb-0">{{ program.name }}</h5>
+                <small class="text-muted">{{ gym.name }}</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-header-right ms-auto">
+        <div class="d-flex gap-2">
+            <a href="{% url 'coaching:group_program_update' program.id %}" class="btn btn-outline-secondary">Modifier</a>
+            <a href="{% url 'coaching:group_program_list' %}" class="btn btn-light">Retour</a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <span class="badge {% if program.is_active %}bg-success{% else %}bg-secondary{% endif %} mb-3">
+                    {% if program.is_active %}Actif{% else %}Inactif{% endif %}
+                </span>
+                <h4>{{ program.name }}</h4>
+                <p class="text-muted mb-3">{{ program.description|default:"Aucune description." }}</p>
+                <div class="small text-muted">
+                    <div class="mb-2"><strong>Objectif :</strong> {{ program.objective|default:"-" }}</div>
+                    <div class="mb-2"><strong>Coach :</strong> {{ program.coach.name }}</div>
+                    <div class="mb-2"><strong>Capacite :</strong> {{ participants.count }}/{{ program.capacity }}</div>
+                    <div><strong>Places restantes :</strong> {{ program.available_slots }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Participants</h5>
+            </div>
+            <div class="card-body">
+                {% if participants %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Membre</th>
+                                    <th>Telephone</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for member in participants %}
+                                    <tr>
+                                        <td>{{ member.first_name }} {{ member.last_name }}</td>
+                                        <td>{{ member.phone|default:"-" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">Aucun membre n'a encore rejoint ce programme.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

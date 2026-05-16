@@ -1,20 +1,67 @@
+from datetime import date, timedelta
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.db.models import Count, Q
+from django.db.models import Avg, Count, Max, Q
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
 from members.models import Member
-from smartclub.access_control import COACHING_ROLES
+from smartclub.access_control import COACHING_ROLES, COACH_PORTAL_ROLES
 from smartclub.decorators import module_required, role_required
 
-from .forms import CoachForm, CoachMemberForm
+from .forms import CoachForm, CoachMemberForm, CoachingFollowUpForm, GroupCoachingProgramForm
 from .kpis import build_coaching_kpis, coaches_queryset
-from .models import Coach
+from .models import Coach, CoachingFeedback, CoachingFollowUp, GroupCoachingProgram
 
 
 def _validation_message(exc):
     return exc.messages[0] if getattr(exc, "messages", None) else str(exc)
+
+
+def _resolve_current_coach(request):
+    if getattr(request.user, "coach_profile", None) and request.user.coach_profile.gym_id == request.gym.id:
+        return request.user.coach_profile
+
+    candidate = Coach.objects.filter(gym=request.gym, user=request.user).first()
+    if candidate:
+        return candidate
+
+    first_name = (request.user.first_name or "").strip()
+    last_name = (request.user.last_name or "").strip()
+    username = (request.user.username or "").strip()
+
+    lookup = Q()
+    if first_name:
+        lookup |= Q(name__icontains=first_name)
+    if last_name:
+        lookup |= Q(name__icontains=last_name)
+    if username:
+        lookup |= Q(name__icontains=username)
+
+    if lookup:
+        candidate = Coach.objects.filter(gym=request.gym).filter(lookup).order_by("name").first()
+        if candidate and not candidate.user_id:
+            candidate.user = request.user
+            candidate.save(update_fields=["user"])
+            return candidate
+        if candidate:
+            return candidate
+
+    candidate = Coach.objects.create(
+        gym=request.gym,
+        user=request.user,
+        name=" ".join(part for part in [first_name, last_name] if part).strip() or username or "Coach",
+        phone="",
+        specialty="Coach sportif",
+        is_active=True,
+    )
+    return candidate
+
+
+def _coach_portal_member_queryset(request, coach):
+    return coach.members.filter(gym=request.gym, is_active=True).order_by("first_name", "last_name")
 
 
 @login_required
@@ -22,7 +69,25 @@ def _validation_message(exc):
 @role_required(COACHING_ROLES)
 def coach_list(request):
     gym = request.gym
-    coaches = coaches_queryset(gym).annotate(member_count=Count("members", distinct=True)).order_by("name")
+    today = date.today()
+    first_contact_deadline = today - timedelta(days=3)
+    stale_follow_up_deadline = today - timedelta(days=14)
+    coaches = coaches_queryset(gym).annotate(
+        member_count=Count("members", distinct=True),
+        last_follow_up_at=Max("follow_ups__created_at"),
+        feedback_average=Avg("feedbacks__overall_rating"),
+        feedback_count=Count("feedbacks", distinct=True),
+        overdue_follow_ups=Count(
+            "follow_ups",
+            filter=Q(follow_ups__next_follow_up_at__isnull=False, follow_ups__next_follow_up_at__lte=today),
+            distinct=True,
+        ),
+        first_contact_overdue_members=Count(
+            "members",
+            filter=Q(members__created_at__date__lte=first_contact_deadline, members__coaching_follow_ups__isnull=True),
+            distinct=True,
+        ),
+    ).order_by("name")
 
     active_filter = request.GET.get("active")
     if active_filter == "active":
@@ -38,11 +103,47 @@ def coach_list(request):
             | Q(specialty__icontains=search)
         )
 
+    assigned_members = Member.objects.filter(
+        gym=gym,
+        is_active=True,
+        coaches__is_active=True,
+        coaches__gym=gym,
+    ).distinct().annotate(last_follow_up_at=Max("coaching_follow_ups__created_at"))
+    attention_members = assigned_members.filter(last_follow_up_at__isnull=True).order_by("first_name", "last_name")[:5]
+    first_contact_overdue_members = assigned_members.filter(
+        created_at__date__lte=first_contact_deadline,
+        last_follow_up_at__isnull=True,
+    ).order_by("created_at", "first_name", "last_name")[:5]
+    stale_follow_up_members = assigned_members.filter(
+        last_follow_up_at__isnull=False,
+        last_follow_up_at__date__lte=stale_follow_up_deadline,
+    ).order_by("last_follow_up_at", "first_name", "last_name")[:5]
+    overdue_follow_ups = (
+        CoachingFollowUp.objects.filter(
+            gym=gym,
+            next_follow_up_at__isnull=False,
+            next_follow_up_at__lte=today,
+        )
+        .select_related("coach", "member")
+        .order_by("next_follow_up_at", "-created_at")[:5]
+    )
+    recent_feedbacks = (
+        CoachingFeedback.objects.filter(gym=gym)
+        .select_related("coach", "member", "group_program")
+        .order_by("-created_at")[:5]
+    )
+
     context = {
         "gym": gym,
         "coaches": coaches,
+        "active_group_programs_count": GroupCoachingProgram.objects.filter(gym=gym, is_active=True).count(),
         "active_filter": active_filter,
         "search": search,
+        "attention_members": attention_members,
+        "first_contact_overdue_members": first_contact_overdue_members,
+        "stale_follow_up_members": stale_follow_up_members,
+        "overdue_follow_ups": overdue_follow_ups,
+        "recent_feedbacks": recent_feedbacks,
         **build_coaching_kpis(gym),
     }
     return render(request, "coaching/coach_list.html", context)
@@ -60,12 +161,27 @@ def coach_detail(request, coach_id):
         .order_by("first_name", "last_name")
     )
 
+    follow_ups = CoachingFollowUp.objects.filter(gym=request.gym, coach=coach)
+    feedbacks = CoachingFeedback.objects.filter(gym=request.gym, coach=coach).select_related("member", "group_program")
     context = {
         "gym": request.gym,
         "coach": coach,
         "members": members,
         "available_members": available_members,
         "member_form": CoachMemberForm(coach=coach),
+        "last_follow_up": follow_ups.order_by("-created_at").first(),
+        "follow_ups_count": follow_ups.count(),
+        "overdue_follow_ups_count": follow_ups.filter(
+            next_follow_up_at__isnull=False,
+            next_follow_up_at__lte=date.today(),
+        ).count(),
+        "feedbacks": feedbacks[:5],
+        "feedback_average": round(
+            feedbacks.aggregate(average=Avg("overall_rating"))["average"] or 0,
+            1,
+        ) if feedbacks.exists() else 0,
+        "feedback_count": feedbacks.count(),
+        "contact_requested_count": feedbacks.filter(wants_contact=True).count(),
         **build_coaching_kpis(request.gym),
     }
     return render(request, "coaching/coach_detail.html", context)
@@ -180,3 +296,213 @@ def remove_member(request, coach_id, member_id):
             messages.error(request, _validation_message(exc))
 
     return redirect("coaching:detail", coach_id=coach.id)
+
+
+@login_required
+@module_required("COACHING")
+@role_required(COACHING_ROLES)
+def group_program_list(request):
+    programs = (
+        GroupCoachingProgram.objects.filter(gym=request.gym)
+        .select_related("coach")
+        .annotate(participant_total=Count("participants", distinct=True))
+        .order_by("-is_active", "name")
+    )
+    return render(
+        request,
+        "coaching/group_program_list.html",
+        {
+            "gym": request.gym,
+            "programs": programs,
+            "active_programs_count": programs.filter(is_active=True).count(),
+            **build_coaching_kpis(request.gym),
+        },
+    )
+
+
+@login_required
+@module_required("COACHING")
+@role_required(COACHING_ROLES)
+def group_program_detail(request, program_id):
+    program = get_object_or_404(
+        GroupCoachingProgram.objects.select_related("coach"),
+        id=program_id,
+        gym=request.gym,
+    )
+    participants = program.participants.filter(gym=request.gym, is_active=True).order_by("first_name", "last_name")
+    return render(
+        request,
+        "coaching/group_program_detail.html",
+        {
+            "gym": request.gym,
+            "program": program,
+            "participants": participants,
+            **build_coaching_kpis(request.gym),
+        },
+    )
+
+
+@login_required
+@module_required("COACHING")
+@role_required(COACHING_ROLES)
+def group_program_create(request):
+    if request.method == "POST":
+        form = GroupCoachingProgramForm(request.POST, gym=request.gym)
+        if form.is_valid():
+            program = form.save(commit=False)
+            program.gym = request.gym
+            program.save()
+            messages.success(request, f'Programme "{program.name}" cree avec succes.')
+            return redirect("coaching:group_program_detail", program_id=program.id)
+    else:
+        form = GroupCoachingProgramForm(gym=request.gym)
+
+    return render(
+        request,
+        "coaching/group_program_form.html",
+        {"gym": request.gym, "form": form, "title": "Creer un programme groupe"},
+    )
+
+
+@login_required
+@module_required("COACHING")
+@role_required(COACHING_ROLES)
+def group_program_update(request, program_id):
+    program = get_object_or_404(GroupCoachingProgram, id=program_id, gym=request.gym)
+    if request.method == "POST":
+        form = GroupCoachingProgramForm(request.POST, instance=program, gym=request.gym)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Programme "{program.name}" modifie avec succes.')
+            return redirect("coaching:group_program_detail", program_id=program.id)
+    else:
+        form = GroupCoachingProgramForm(instance=program, gym=request.gym)
+
+    return render(
+        request,
+        "coaching/group_program_form.html",
+        {"gym": request.gym, "form": form, "program": program, "title": "Modifier le programme groupe"},
+    )
+
+
+@login_required
+@module_required("COACHING")
+@role_required(COACHING_ROLES)
+def group_program_delete(request, program_id):
+    program = get_object_or_404(GroupCoachingProgram, id=program_id, gym=request.gym)
+    if request.method == "POST":
+        program.is_active = False
+        program.save(update_fields=["is_active"])
+        messages.success(request, f'Programme "{program.name}" desactive avec succes.')
+        return redirect("coaching:group_program_list")
+
+    return render(
+        request,
+        "coaching/group_program_confirm_delete.html",
+        {"gym": request.gym, "program": program},
+    )
+
+
+@login_required
+@module_required("COACHING")
+@role_required(COACH_PORTAL_ROLES)
+def coach_portal(request):
+    coach = _resolve_current_coach(request)
+    if not coach:
+        raise Http404("Coach introuvable")
+
+    active_tab = request.GET.get("tab", "home")
+    if active_tab not in {"home", "members", "programs"}:
+        active_tab = "home"
+
+    today = date.today()
+    first_contact_deadline = today - timedelta(days=3)
+    stale_follow_up_deadline = today - timedelta(days=14)
+
+    members = _coach_portal_member_queryset(request, coach).annotate(
+        latest_follow_up_at=Max("coaching_follow_ups__created_at")
+    )
+    programs = (
+        GroupCoachingProgram.objects.filter(gym=request.gym, coach=coach, is_active=True)
+        .annotate(participants_total=Count("participants", distinct=True))
+        .order_by("name")
+    )
+    recent_member_ids = set(members.order_by("-created_at").values_list("id", flat=True)[:5])
+    due_follow_ups_count = CoachingFollowUp.objects.filter(
+        gym=request.gym,
+        coach=coach,
+        next_follow_up_at__isnull=False,
+        next_follow_up_at__lte=today,
+    ).count()
+    first_contact_overdue_members = members.filter(
+        created_at__date__lte=first_contact_deadline,
+        latest_follow_up_at__isnull=True,
+    )
+    stale_follow_up_members = members.filter(
+        latest_follow_up_at__isnull=False,
+        latest_follow_up_at__date__lte=stale_follow_up_deadline,
+    )
+    priority_members = list(first_contact_overdue_members[:3]) + [
+        member for member in stale_follow_up_members[:3] if member.id not in {item.id for item in first_contact_overdue_members[:3]}
+    ]
+
+    context = {
+        "gym": request.gym,
+        "coach": coach,
+        "active_tab": active_tab,
+        "members": members,
+        "programs": programs,
+        "recent_member_ids": list(recent_member_ids),
+        "members_count": members.count(),
+        "programs_count": programs.count(),
+        "recent_members_count": len(recent_member_ids),
+        "due_follow_ups_count": due_follow_ups_count,
+        "members_without_follow_up_count": members.filter(latest_follow_up_at__isnull=True).count(),
+        "first_contact_overdue_count": first_contact_overdue_members.count(),
+        "stale_follow_up_members_count": stale_follow_up_members.count(),
+        "priority_members": priority_members,
+        "current_load_label": "Charge elevee" if members.count() >= 10 else "Charge moyenne" if members.count() >= 5 else "Disponible",
+    }
+    return render(request, "coaching/coach_portal.html", context)
+
+
+@login_required
+@module_required("COACHING")
+@role_required(COACH_PORTAL_ROLES)
+def coach_member_detail(request, member_id):
+    coach = _resolve_current_coach(request)
+    if not coach:
+        raise Http404("Coach introuvable")
+
+    member = get_object_or_404(_coach_portal_member_queryset(request, coach), id=member_id)
+    follow_ups = CoachingFollowUp.objects.filter(
+        gym=request.gym,
+        coach=coach,
+        member=member,
+    ).order_by("-created_at")
+
+    if request.method == "POST":
+        form = CoachingFollowUpForm(request.POST)
+        if form.is_valid():
+            follow_up = form.save(commit=False)
+            follow_up.gym = request.gym
+            follow_up.coach = coach
+            follow_up.member = member
+            follow_up.save()
+            messages.success(request, "Suivi enregistre avec succes.")
+            return redirect("coaching:coach_member_detail", member_id=member.id)
+        messages.error(request, "Le suivi n'a pas pu etre enregistre. Verifie les champs saisis.")
+    else:
+        form = CoachingFollowUpForm()
+
+    latest_follow_up = follow_ups.first()
+    context = {
+        "gym": request.gym,
+        "coach": coach,
+        "member": member,
+        "follow_ups": follow_ups,
+        "follow_ups_count": follow_ups.count(),
+        "latest_follow_up": latest_follow_up,
+        "form": form,
+    }
+    return render(request, "coaching/coach_member_detail.html", context)

@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from coaching.models import Coach
+from coaching.models import Coach, CoachingFeedback, GroupCoachingProgram
 from compte.models import User, UserGymRole
 from members.models import Member, MemberPreRegistration, MemberPreRegistrationLink
 from notifications.models import Notification
@@ -186,6 +186,20 @@ class MemberPortalTests(TestCase):
             specialty="Musculation",
         )
         self.coach.members.add(self.member)
+        self.second_coach = Coach.objects.create(
+            gym=self.gym,
+            name="Coach Balance",
+            phone="+243990000102",
+            specialty="Cardio",
+        )
+        self.group_program = GroupCoachingProgram.objects.create(
+            gym=self.gym,
+            coach=self.coach,
+            name="Transformation 8 semaines",
+            objective="Perte de poids",
+            description="Accompagnement collectif progressif",
+            capacity=10,
+        )
 
     def test_member_login_redirects_to_mobile_portal(self):
         response = self.client.post(
@@ -375,6 +389,83 @@ class MemberPortalTests(TestCase):
             reverse("compte:welcome"),
             fetch_redirect_response=False,
         )
+
+    def test_member_can_choose_a_new_coach_from_portal(self):
+        self.client.force_login(self.member.user)
+
+        response = self.client.post(
+            reverse("members:member_choose_coach"),
+            {"coach_id": self.second_coach.id},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], f"{reverse('members:member_portal')}?tab=home")
+        self.assertTrue(self.second_coach.members.filter(id=self.member.id).exists())
+        self.assertFalse(self.coach.members.filter(id=self.member.id).exists())
+
+    def test_member_can_join_group_program_from_portal(self):
+        self.client.force_login(self.member.user)
+
+        response = self.client.post(
+            reverse("members:member_choose_group_program"),
+            {"program_id": self.group_program.id},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], f"{reverse('members:member_portal')}?tab=home")
+        self.assertTrue(self.group_program.participants.filter(id=self.member.id).exists())
+
+        home_response = self.client.get(reverse("members:member_portal"))
+        self.assertContains(home_response, "Transformation 8 semaines")
+        self.assertContains(home_response, "Rejoindre un programme groupe")
+
+    def test_member_can_submit_feedback_for_current_coach(self):
+        self.client.force_login(self.member.user)
+
+        response = self.client.post(
+            reverse("members:member_submit_coaching_feedback"),
+            {
+                "feedback_kind": "coach",
+                "coach_id": self.coach.id,
+                "coach-feedback-overall_rating": "5",
+                "coach-feedback-listening_rating": "5",
+                "coach-feedback-clarity_rating": "4",
+                "coach-feedback-motivation_rating": "5",
+                "coach-feedback-availability_rating": "4",
+                "coach-feedback-comment": "Coach tres implique et rassurant.",
+                "coach-feedback-wants_contact": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], f"{reverse('members:member_portal')}?tab=home")
+        feedback = CoachingFeedback.objects.get(member=self.member, coach=self.coach, group_program__isnull=True)
+        self.assertEqual(feedback.overall_rating, 5)
+        self.assertTrue(feedback.wants_contact)
+
+    def test_member_can_submit_feedback_for_current_group_program(self):
+        self.group_program.participants.add(self.member)
+        self.client.force_login(self.member.user)
+
+        response = self.client.post(
+            reverse("members:member_submit_coaching_feedback"),
+            {
+                "feedback_kind": "group_program",
+                "coach_id": self.coach.id,
+                "program_id": self.group_program.id,
+                "group-feedback-overall_rating": "4",
+                "group-feedback-listening_rating": "4",
+                "group-feedback-clarity_rating": "4",
+                "group-feedback-motivation_rating": "5",
+                "group-feedback-availability_rating": "4",
+                "group-feedback-comment": "Le format groupe motive beaucoup.",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], f"{reverse('members:member_portal')}?tab=home")
+        feedback = CoachingFeedback.objects.get(member=self.member, group_program=self.group_program)
+        self.assertEqual(feedback.coach, self.coach)
 
     def test_member_portal_qr_is_limited_to_authenticated_member(self):
         anonymous_response = self.client.get(reverse("members:member_portal_qr"))

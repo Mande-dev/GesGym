@@ -1,12 +1,14 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
+from datetime import timedelta
 
 from compte.models import User, UserGymRole
 from members.models import Member
 from organizations.models import Gym, GymModule, Module, Organization
 
-from .models import Coach
+from .models import Coach, CoachingFeedback, CoachingFollowUp, GroupCoachingProgram
 
 
 class CoachingTenantTests(TestCase):
@@ -31,9 +33,17 @@ class CoachingTenantTests(TestCase):
 
         self.user = User.objects.create_user(username="coach-manager", password="test-pass")
         UserGymRole.objects.create(user=self.user, gym=self.gym_a, role="manager")
+        self.coach_user = User.objects.create_user(
+            username="coach-mobile",
+            password="test-pass",
+            first_name="Coach",
+            last_name="A",
+        )
+        UserGymRole.objects.create(user=self.coach_user, gym=self.gym_a, role="coach")
 
         self.coach_a = Coach.objects.create(
             gym=self.gym_a,
+            user=self.coach_user,
             name="Coach A",
             phone="1000",
             specialty="Musculation",
@@ -140,3 +150,179 @@ class CoachingTenantTests(TestCase):
         self.assertContains(response, "coachingWorkloadChart")
         self.assertContains(response, "Coach A")
         self.assertNotContains(response, "Coach B")
+
+    def test_coach_mobile_portal_is_available_for_coach_role(self):
+        self.client.logout()
+        self.client.login(username="coach-mobile", password="test-pass")
+        self.coach_a.members.add(self.member_a)
+
+        response = self.client.get(reverse("coaching:coach_portal"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Espace coach")
+        self.assertContains(response, "Coach A")
+        self.assertContains(response, "Alice Member")
+
+    def test_group_program_pages_are_scoped_to_current_gym(self):
+        program = GroupCoachingProgram.objects.create(
+            gym=self.gym_a,
+            coach=self.coach_a,
+            name="Transformation 8 semaines",
+            objective="Perte de poids",
+            capacity=10,
+        )
+        other_program = GroupCoachingProgram.objects.create(
+            gym=self.gym_b,
+            coach=self.coach_b,
+            name="Yoga collectif",
+            objective="Souplesse",
+            capacity=8,
+        )
+        program.participants.add(self.member_a)
+        other_program.participants.add(self.member_b)
+
+        response = self.client.get(reverse("coaching:group_program_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Transformation 8 semaines")
+        self.assertNotContains(response, "Yoga collectif")
+
+        detail_response = self.client.get(reverse("coaching:group_program_detail", args=[program.id]))
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, "Alice Member")
+
+        other_detail_response = self.client.get(reverse("coaching:group_program_detail", args=[other_program.id]))
+        self.assertEqual(other_detail_response.status_code, 404)
+
+    def test_coach_can_open_member_follow_up_detail(self):
+        self.client.logout()
+        self.client.login(username="coach-mobile", password="test-pass")
+        self.coach_a.members.add(self.member_a)
+
+        response = self.client.get(reverse("coaching:coach_member_detail", args=[self.member_a.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Suivi membre")
+        self.assertContains(response, "Alice Member")
+
+    def test_coach_cannot_open_member_outside_portfolio(self):
+        self.client.logout()
+        self.client.login(username="coach-mobile", password="test-pass")
+
+        response = self.client.get(reverse("coaching:coach_member_detail", args=[self.member_a.id]))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_coach_can_add_follow_up_for_assigned_member(self):
+        self.client.logout()
+        self.client.login(username="coach-mobile", password="test-pass")
+        self.coach_a.members.add(self.member_a)
+
+        response = self.client.post(
+            reverse("coaching:coach_member_detail", args=[self.member_a.id]),
+            {
+                "interaction_type": CoachingFollowUp.INTERACTION_CALL,
+                "summary": "Appel de bienvenue et cadrage des objectifs.",
+                "next_action": "Prevoir un bilan complet",
+                "next_follow_up_at": "2026-05-20",
+            },
+        )
+
+        self.assertRedirects(response, reverse("coaching:coach_member_detail", args=[self.member_a.id]))
+        follow_up = CoachingFollowUp.objects.get(member=self.member_a, coach=self.coach_a)
+        self.assertEqual(follow_up.gym, self.gym_a)
+        self.assertEqual(follow_up.interaction_type, CoachingFollowUp.INTERACTION_CALL)
+        self.assertEqual(follow_up.next_action, "Prevoir un bilan complet")
+
+    def test_coach_portal_shows_follow_up_shortcuts(self):
+        self.client.logout()
+        self.client.login(username="coach-mobile", password="test-pass")
+        self.coach_a.members.add(self.member_a)
+        CoachingFollowUp.objects.create(
+            gym=self.gym_a,
+            coach=self.coach_a,
+            member=self.member_a,
+            interaction_type=CoachingFollowUp.INTERACTION_FOLLOW_UP,
+            summary="Relance simple",
+            next_action="Verifier la reprise",
+        )
+
+        response = self.client.get(reverse("coaching:coach_portal"), {"tab": "members"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Voir le suivi membre")
+        self.assertContains(response, "Dernier suivi")
+
+    def test_coach_portal_surfaces_first_contact_alerts(self):
+        self.client.logout()
+        self.client.login(username="coach-mobile", password="test-pass")
+        self.coach_a.members.add(self.member_a)
+        Member.objects.filter(id=self.member_a.id).update(created_at=timezone.now() - timedelta(days=5))
+
+        response = self.client.get(reverse("coaching:coach_portal"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Priorites du jour")
+        self.assertContains(response, "Premier contact en retard")
+        self.assertContains(response, "Premier contact")
+
+    def test_manager_dashboard_shows_follow_up_alerts(self):
+        self.coach_a.members.add(self.member_a)
+        Member.objects.filter(id=self.member_a.id).update(created_at=timezone.now() - timedelta(days=5))
+        CoachingFollowUp.objects.create(
+            gym=self.gym_a,
+            coach=self.coach_a,
+            member=self.member_a,
+            interaction_type=CoachingFollowUp.INTERACTION_FOLLOW_UP,
+            summary="Relance a faire",
+            next_action="Rappeler le membre",
+            next_follow_up_at="2026-05-01",
+        )
+
+        response = self.client.get(reverse("coaching:list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Relances en retard")
+        self.assertContains(response, "Membres sans suivi trace")
+        self.assertContains(response, "Dernier suivi")
+
+    def test_manager_dashboard_shows_first_contact_and_stale_follow_up_alerts(self):
+        self.coach_a.members.add(self.member_a)
+        Member.objects.filter(id=self.member_a.id).update(created_at=timezone.now() - timedelta(days=20))
+        old_follow_up = CoachingFollowUp.objects.create(
+            gym=self.gym_a,
+            coach=self.coach_a,
+            member=self.member_a,
+            interaction_type=CoachingFollowUp.INTERACTION_FOLLOW_UP,
+            summary="Ancien suivi",
+            next_action="Reprendre contact",
+        )
+        CoachingFollowUp.objects.filter(id=old_follow_up.id).update(created_at=timezone.now() - timedelta(days=15))
+
+        response = self.client.get(reverse("coaching:list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Premiers contacts en retard")
+        self.assertContains(response, "Suivis anciens")
+
+    def test_manager_dashboard_shows_recent_feedbacks(self):
+        self.coach_a.members.add(self.member_a)
+        CoachingFeedback.objects.create(
+            gym=self.gym_a,
+            member=self.member_a,
+            coach=self.coach_a,
+            overall_rating=4,
+            listening_rating=4,
+            clarity_rating=4,
+            motivation_rating=5,
+            availability_rating=4,
+            comment="Tres bon suivi",
+            wants_contact=True,
+        )
+
+        response = self.client.get(reverse("coaching:list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Feedbacks recents")
+        self.assertContains(response, "Tres bon suivi")
+        self.assertContains(response, "A rappeler")

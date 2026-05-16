@@ -22,6 +22,7 @@ RH_PAYROLL_ROLES = frozenset({"owner", "manager"})
 PRODUCT_ROLES = frozenset({"owner", "manager"})
 SETTINGS_ROLES = frozenset({"owner", "manager"})
 SETTINGS_ORGANIZATION_ROLES = frozenset({"owner"})
+COACH_PORTAL_ROLES = frozenset({"coach"})
 
 
 def current_role(request):
@@ -102,6 +103,10 @@ def role_home_route(request):
             ("can_pos_cashier", "POS", "pos:cashier_dashboard"),
             ("can_rh_attendance", "RH", "rh:attendance_bulk"),
         ]
+    elif role == "coach":
+        route_candidates = [
+            (None, "COACHING", "coaching:coach_portal"),
+        ]
     else:
         route_candidates = [
             ("can_members", "MEMBERS", "members:member_list"),
@@ -110,7 +115,8 @@ def role_home_route(request):
             ("can_rh_attendance", "RH", "rh:attendance_bulk"),
         ]
     for flag_name, module_code, route_name in route_candidates:
-        if flags[flag_name] and module_is_active(request, module_code):
+        has_flag = True if flag_name is None else flags.get(flag_name, False)
+        if has_flag and module_is_active(request, module_code):
             return route_name
 
     return "compte:profile"

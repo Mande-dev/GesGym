@@ -6,6 +6,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
 from compte.models import User, UserGymRole
+from members.models import Member
 from organizations.models import Gym, GymModule, Module, Organization
 
 
@@ -215,6 +216,70 @@ class LoginConfigurationTests(TestCase):
         self.assertContains(response, reverse("compte:password_reset"))
         self.assertContains(response, "https://github.com/rossy0243")
         self.assertNotContains(response, 'aria-label="Facebook"')
+
+    def test_member_login_prioritizes_member_portal_even_with_staff_role(self):
+        organization = Organization.objects.create(name="Member Org", slug="member-org")
+        gym = Gym.objects.create(
+            organization=organization,
+            name="Member Gym",
+            slug="member-gym",
+            subdomain="member-gym",
+        )
+        user = User.objects.create_user(
+            username="member-priority",
+            password="pass12345",
+        )
+        Member.objects.create(
+            gym=gym,
+            user=user,
+            first_name="Mila",
+            last_name="Portal",
+            phone="+243810009999",
+            email="mila.portal@example.com",
+        )
+        UserGymRole.objects.create(user=user, gym=gym, role="cashier", is_active=True)
+
+        response = self.client.post(
+            reverse("compte:login"),
+            {"username": "member-priority", "password": "pass12345"},
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("compte:welcome"),
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(self.client.session["post_login_target"], reverse("members:member_portal"))
+
+    def test_coach_login_sets_welcome_target_to_coach_portal(self):
+        organization = Organization.objects.create(name="Coach Org", slug="coach-org")
+        gym = Gym.objects.create(
+            organization=organization,
+            name="Coach Gym",
+            slug="coach-gym",
+            subdomain="coach-gym",
+        )
+        module, _ = Module.objects.get_or_create(code="COACHING", defaults={"name": "Coaching"})
+        GymModule.objects.get_or_create(gym=gym, module=module, defaults={"is_active": True})
+        user = User.objects.create_user(
+            username="coach-route",
+            password="pass12345",
+            first_name="Coach",
+            last_name="Route",
+        )
+        UserGymRole.objects.create(user=user, gym=gym, role="coach", is_active=True)
+
+        response = self.client.post(
+            reverse("compte:login"),
+            {"username": "coach-route", "password": "pass12345"},
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("compte:welcome"),
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(self.client.session["post_login_target"], reverse("coaching:coach_portal"))
 
 
 @override_settings(

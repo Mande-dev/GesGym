@@ -26,14 +26,7 @@ def _resolve_login_success_url(request):
 
     member_profile = getattr(user, "member_profile", None)
     if member_profile:
-        has_staff_role = UserGymRole.objects.filter(
-            user=user,
-            is_active=True,
-            gym__is_active=True,
-            gym__organization__is_active=True,
-        ).exists()
-        if not has_staff_role:
-            return reverse_lazy("members:member_portal")
+        return reverse_lazy("members:member_portal")
 
     role = UserGymRole.objects.filter(
         user=user,
@@ -49,6 +42,9 @@ def _resolve_login_success_url(request):
             "Aucun acces actif n'est associe a ces identifiants."
         )
         return reverse_lazy("compte:login")
+
+    if role.role == "coach":
+        return reverse_lazy("coaching:coach_portal")
 
     return reverse_lazy("core:dashboard_redirect")
 

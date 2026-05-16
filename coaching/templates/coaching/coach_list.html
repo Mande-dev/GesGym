@@ -22,6 +22,10 @@
                 <span class="material-icons" style="font-size:18px;">add</span>
                 Ajouter un coach
             </a>
+            <a href="{% url 'coaching:group_program_list' %}" class="btn btn-outline-primary d-flex align-items-center gap-2">
+                <span class="material-icons" style="font-size:18px;">groups</span>
+                Programmes groupes
+            </a>
         </div>
     </div>
 </div>
@@ -140,7 +144,7 @@
 </style>
 
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="coach-stat-card p-3">
             <div class="d-flex align-items-center gap-3">
                 <div class="icon-box" style="background: rgba(13, 110, 253, 0.08); color:#0d6efd;">
@@ -155,7 +159,7 @@
         </div>
     </div>
 
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="coach-stat-card p-3">
             <div class="d-flex align-items-center gap-3">
                 <div class="icon-box" style="background: rgba(255, 193, 7, 0.12); color:#b78103;">
@@ -170,7 +174,7 @@
         </div>
     </div>
 
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="coach-stat-card p-3">
             <div class="d-flex align-items-center gap-3">
                 <div class="icon-box" style="background: rgba(25, 135, 84, 0.08); color:#198754;">
@@ -180,6 +184,68 @@
                     <div class="fs-12 text-muted">Charge moyenne</div>
                     <h4 class="mb-0">{{ average_members_per_coach }}</h4>
                     <small class="text-muted">membres par coach actif</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="coach-stat-card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon-box" style="background: rgba(220, 53, 69, 0.08); color:#dc3545;">
+                    <span class="material-icons">notification_important</span>
+                </div>
+                <div>
+                    <div class="fs-12 text-muted">Relances en retard</div>
+                    <h4 class="mb-0">{{ overdue_follow_ups_count }}</h4>
+                    <small class="text-muted">actions manager a surveiller</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="coach-stat-card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon-box" style="background: rgba(255, 140, 0, 0.10); color:#d97706;">
+                    <span class="material-icons">support_agent</span>
+                </div>
+                <div>
+                    <div class="fs-12 text-muted">Premier contact en retard</div>
+                    <h4 class="mb-0">{{ first_contact_overdue_count }}</h4>
+                    <small class="text-muted">membres assignes sans premier suivi apres 3 jours</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="coach-stat-card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon-box" style="background: rgba(255, 140, 0, 0.10); color:#d97706;">
+                    <span class="material-icons">history</span>
+                </div>
+                <div>
+                    <div class="fs-12 text-muted">Suivis anciens</div>
+                    <h4 class="mb-0">{{ stale_follow_up_members_count }}</h4>
+                    <small class="text-muted">membres sans suivi recent depuis 14 jours</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="coach-stat-card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon-box" style="background: rgba(255, 140, 0, 0.10); color:#d97706;">
+                    <span class="material-icons">star</span>
+                </div>
+                <div>
+                    <div class="fs-12 text-muted">Satisfaction moyenne</div>
+                    <h4 class="mb-0">{{ feedback_average }}/5</h4>
+                    <small class="text-muted">{{ feedback_count }} avis coaching</small>
                 </div>
             </div>
         </div>
@@ -226,14 +292,14 @@
             <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
                 <div>
                     <h6 class="mb-1">Nouveau workflow de pilotage</h6>
-                    <p class="text-muted mb-0">Le module commence maintenant par une vue de repartition avant d'entrer dans une fiche coach.</p>
+                    <p class="text-muted mb-0">La vue manager permet maintenant de verifier la repartition et le vrai niveau de suivi avant d'ouvrir une fiche coach.</p>
                 </div>
-                <span class="badge text-bg-light border">Etape 1</span>
+                <span class="badge text-bg-light border">Sprint 5</span>
             </div>
             <ol class="mt-3 mb-0 text-muted ps-3">
-                <li>Verifier les membres sans coach et la charge moyenne.</li>
-                <li>Identifier le coach disponible via la liste et sa charge.</li>
-                <li>Ouvrir la fiche du coach pour faire l'affectation.</li>
+                <li>Verifier les membres sans coach, sans suivi et les relances en retard.</li>
+                <li>Identifier le coach disponible ou le coach qui decroche.</li>
+                <li>Ouvrir la fiche coach pour redistribuer, recadrer ou suivre.</li>
             </ol>
         </div>
     </div>
@@ -243,9 +309,145 @@
             <h6 class="mb-3">Points d'attention</h6>
             <ul class="insight-list">
                 <li>{{ assigned_members_count }} membres sont deja affectes a un coach.</li>
+                <li>{{ members_without_follow_up_count }} membres affectes n'ont encore aucun suivi trace.</li>
+                <li>{{ first_contact_overdue_count }} premiers contacts sont deja en retard.</li>
+                <li>{{ stale_follow_up_members_count }} membres n'ont pas ete suivis recemment.</li>
+                <li>{{ recent_follow_ups_count }} suivis ont ete enregistres sur la periode.</li>
+                <li>{{ contact_requested_count }} avis demandent un recontact rapide.</li>
                 <li>{{ inactive_coaches }} coach(s) sont inactifs.</li>
+                <li>{{ active_group_programs_count }} programme(s) groupe actifs.</li>
                 <li>{{ new_coaches_period }} nouveau(x) coach(s) ce mois-ci.</li>
             </ul>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="insight-card p-4">
+            <h6 class="mb-3">Feedbacks recents</h6>
+            <div class="d-grid gap-3">
+                {% for feedback in recent_feedbacks %}
+                    <div class="d-flex justify-content-between align-items-start gap-3 border rounded-4 p-3">
+                        <div>
+                            <div class="fw-semibold">{{ feedback.member.first_name }} {{ feedback.member.last_name }}</div>
+                            <small class="text-muted">{{ feedback.coach.name }}{% if feedback.group_program %} • {{ feedback.group_program.name }}{% endif %}</small>
+                            {% if feedback.comment %}
+                                <div class="text-muted mt-1">{{ feedback.comment|truncatechars:90 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="text-end">
+                            <span class="badge text-bg-light border">{{ feedback.overall_rating }}/5</span>
+                            {% if feedback.wants_contact %}
+                                <div class="mt-2"><span class="badge text-bg-danger">A rappeler</span></div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% empty %}
+                    <small class="text-muted">Aucun feedback membre n'a encore ete enregistre.</small>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="insight-card p-4">
+            <h6 class="mb-3">Coachs les plus exposes</h6>
+            <div class="d-grid gap-3">
+                {% for exposed in most_exposed_coaches %}
+                    <div class="d-flex justify-content-between align-items-start gap-3 border rounded-4 p-3">
+                        <div>
+                            <div class="fw-semibold">{{ exposed.name }}</div>
+                            <small class="text-muted">{{ exposed.member_count }} membres • {{ exposed.overdue_follow_ups }} relance(s) en retard</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge text-bg-light border">{% if exposed.feedback_count %}{{ exposed.feedback_average|floatformat:1 }}/5{% else %}Pas d'avis{% endif %}</span>
+                        </div>
+                    </div>
+                {% empty %}
+                    <small class="text-muted">Aucun coach n'est encore expose selon les indicateurs actuels.</small>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="insight-card p-4">
+            <h6 class="mb-3">Membres sans suivi trace</h6>
+            <div class="d-grid gap-3">
+                {% for member in attention_members %}
+                    <div class="d-flex justify-content-between align-items-start gap-3 border rounded-4 p-3">
+                        <div>
+                            <div class="fw-semibold">{{ member.first_name }} {{ member.last_name }}</div>
+                            <small class="text-muted">{{ member.phone|default:"Telephone non renseigne" }}</small>
+                        </div>
+                        <span class="badge text-bg-warning">A lancer</span>
+                    </div>
+                {% empty %}
+                    <small class="text-muted">Tous les membres affectes ont deja au moins un suivi trace.</small>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="insight-card p-4">
+            <h6 class="mb-3">Premiers contacts en retard</h6>
+            <div class="d-grid gap-3">
+                {% for member in first_contact_overdue_members %}
+                    <div class="d-flex justify-content-between align-items-start gap-3 border rounded-4 p-3">
+                        <div>
+                            <div class="fw-semibold">{{ member.first_name }} {{ member.last_name }}</div>
+                            <small class="text-muted">{{ member.phone|default:"Telephone non renseigne" }}</small>
+                        </div>
+                        <span class="badge text-bg-warning">A contacter</span>
+                    </div>
+                {% empty %}
+                    <small class="text-muted">Aucun premier contact n'est actuellement en retard.</small>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="insight-card p-4">
+            <h6 class="mb-3">Suivis anciens</h6>
+            <div class="d-grid gap-3">
+                {% for member in stale_follow_up_members %}
+                    <div class="d-flex justify-content-between align-items-start gap-3 border rounded-4 p-3">
+                        <div>
+                            <div class="fw-semibold">{{ member.first_name }} {{ member.last_name }}</div>
+                            <small class="text-muted">Dernier suivi {{ member.last_follow_up_at|date:"d/m/Y H:i" }}</small>
+                        </div>
+                        <span class="badge text-bg-warning">A relancer</span>
+                    </div>
+                {% empty %}
+                    <small class="text-muted">Aucun suivi ancien n'est actuellement remonte.</small>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="insight-card p-4">
+            <h6 class="mb-3">Relances en retard</h6>
+            <div class="d-grid gap-3">
+                {% for follow_up in overdue_follow_ups %}
+                    <div class="d-flex justify-content-between align-items-start gap-3 border rounded-4 p-3">
+                        <div>
+                            <div class="fw-semibold">{{ follow_up.member.first_name }} {{ follow_up.member.last_name }}</div>
+                            <small class="text-muted">{{ follow_up.coach.name }} • {{ follow_up.next_follow_up_at|date:"d/m/Y" }}</small>
+                        </div>
+                        <span class="badge text-bg-danger">En retard</span>
+                    </div>
+                {% empty %}
+                    <small class="text-muted">Aucune relance n'est actuellement en retard.</small>
+                {% endfor %}
+            </div>
         </div>
     </div>
 </div>
@@ -274,6 +476,10 @@
                 <div><strong>Telephone :</strong> {{ coach.phone|default:"-" }}</div>
                 <div><strong>Specialite :</strong> {{ coach.specialty|default:"-" }}</div>
                 <div><strong>Membres assignes :</strong> {{ coach.member_count }}</div>
+                <div><strong>Dernier suivi :</strong> {{ coach.last_follow_up_at|date:"d/m/Y H:i"|default:"Aucun suivi" }}</div>
+                <div><strong>Relances en retard :</strong> {{ coach.overdue_follow_ups }}</div>
+                <div><strong>Premiers contacts en retard :</strong> {{ coach.first_contact_overdue_members }}</div>
+                <div><strong>Satisfaction :</strong> {% if coach.feedback_count %}{{ coach.feedback_average|floatformat:1 }}/5 ({{ coach.feedback_count }} avis){% else %}Aucun avis{% endif %}</div>
             </div>
 
             <div class="coach-card-footer mb-3">

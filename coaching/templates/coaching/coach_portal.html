@@ -1,0 +1,714 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#102820">
+    <title>{{ gym.name }} | Espace coach</title>
+    <style>
+        :root {
+            --ink: #102820;
+            --muted: #65726b;
+            --line: #dbe3dd;
+            --paper: #f6f7f2;
+            --panel: #ffffff;
+            --accent: #ff8c00;
+            --accent-dark: #004e92;
+            --ok: #15803d;
+            --warn: #a15c00;
+            --shadow: 0 18px 42px rgba(16, 40, 32, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                linear-gradient(180deg, rgba(255, 140, 0, 0.08), rgba(255, 255, 255, 0) 220px),
+                var(--paper);
+            color: var(--ink);
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+        }
+
+        a,
+        button {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .coach-app-shell {
+            width: min(100%, 720px);
+            margin: 0 auto;
+            padding: max(18px, env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom));
+        }
+
+        .coach-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .coach-topbar h1,
+        .section-heading h2,
+        .hero-panel h2 {
+            margin: 0;
+            line-height: 1.08;
+        }
+
+        .coach-topbar h1 {
+            font-size: clamp(1.25rem, 5vw, 1.7rem);
+            font-weight: 800;
+        }
+
+        .eyebrow {
+            margin: 0 0 5px;
+            color: var(--muted);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .logout-button,
+        .refresh-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            padding: 0 14px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.72);
+            color: var(--ink);
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 0.92rem;
+            gap: 8px;
+        }
+
+        .logout-button:hover,
+        .logout-button:focus,
+        .refresh-button:hover,
+        .refresh-button:focus {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 24px rgba(16, 40, 32, 0.1);
+        }
+
+        .refresh-button {
+            cursor: pointer;
+            background: rgba(16, 40, 32, 0.06);
+            color: var(--ink);
+            border-color: rgba(16, 40, 32, 0.12);
+        }
+
+        .hero-panel,
+        .content-panel,
+        .info-block,
+        .summary-card,
+        .member-card,
+        .program-card {
+            border: 1px solid var(--line);
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .hero-panel {
+            position: relative;
+            overflow: hidden;
+            border-radius: 24px;
+            padding: 18px;
+            margin-bottom: 18px;
+        }
+
+        .hero-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(135deg, rgba(0, 78, 146, 0.12), transparent 36%),
+                linear-gradient(315deg, rgba(255, 140, 0, 0.16), transparent 42%);
+            pointer-events: none;
+        }
+
+        .hero-panel > * {
+            position: relative;
+        }
+
+        .coach-identity {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .avatar {
+            width: 76px;
+            height: 76px;
+            flex: 0 0 76px;
+            border-radius: 22px;
+            background: linear-gradient(180deg, #eef2ef, #dde6df);
+            color: var(--accent-dark);
+            display: grid;
+            place-items: center;
+            font-size: 1.45rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 0 10px;
+            border-radius: 999px;
+            background: rgba(21, 128, 61, 0.12);
+            color: var(--ok);
+            font-size: 0.76rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .status-pill.warn {
+            background: rgba(161, 92, 0, 0.14);
+            color: var(--warn);
+        }
+
+        .coach-identity h2 {
+            margin-top: 8px;
+            font-size: clamp(1.55rem, 7vw, 2.2rem);
+            font-weight: 900;
+        }
+
+        .coach-identity p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        .coach-card {
+            border-radius: 20px;
+            background: #102820;
+            color: #fff;
+            padding: 16px;
+        }
+
+        .coach-card-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .coach-card-head span,
+        .coach-card small {
+            color: rgba(255, 255, 255, 0.72);
+        }
+
+        .coach-card-head strong {
+            display: block;
+            margin-top: 2px;
+            font-size: 1.05rem;
+        }
+
+        .coach-chip {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 0 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            font-size: 0.76rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .coach-card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .coach-card-metric {
+            border-radius: 16px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .coach-card-metric strong {
+            display: block;
+            margin-top: 4px;
+            font-size: 1.15rem;
+        }
+
+        .section-heading {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .section-heading h2 {
+            font-size: 1.18rem;
+            font-weight: 800;
+        }
+
+        .section-heading small {
+            color: var(--muted);
+        }
+
+        .content-panel {
+            border-radius: 22px;
+            padding: 18px;
+            margin-bottom: 18px;
+        }
+
+        .summary-grid,
+        .info-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin-bottom: 16px;
+        }
+
+        .summary-card {
+            border-radius: 18px;
+            padding: 14px;
+        }
+
+        .summary-card span {
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .summary-card strong {
+            display: block;
+            margin: 6px 0 4px;
+            font-size: 1.35rem;
+        }
+
+        .summary-card small {
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        .info-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin-bottom: 16px;
+        }
+
+        .info-block {
+            border-radius: 18px;
+            padding: 14px;
+        }
+
+        .info-block span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .info-block strong {
+            display: block;
+            margin-top: 8px;
+            font-size: 1rem;
+        }
+
+        .stack {
+            display: grid;
+            gap: 12px;
+        }
+
+        .member-card,
+        .program-card {
+            border-radius: 20px;
+            padding: 16px;
+        }
+
+        .card-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .card-head strong {
+            font-size: 1rem;
+        }
+
+        .card-head p {
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            background: rgba(0, 78, 146, 0.09);
+            color: var(--accent-dark);
+            white-space: nowrap;
+        }
+
+        .tag.warn {
+            background: rgba(255, 140, 0, 0.12);
+            color: #8a4d00;
+        }
+
+        .detail-list {
+            display: grid;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+
+        .detail-list strong {
+            color: var(--ink);
+        }
+
+        .empty-state {
+            border-radius: 20px;
+            padding: 22px;
+            text-align: center;
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.84);
+            border: 1px dashed rgba(148, 163, 184, 0.35);
+        }
+
+        .mobile-dock {
+            position: fixed;
+            left: 50%;
+            bottom: 16px;
+            transform: translateX(-50%);
+            width: min(92vw, 520px);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 10px;
+            border-radius: 24px;
+            background: rgba(16, 40, 32, 0.94);
+            box-shadow: 0 20px 45px rgba(16, 40, 32, 0.28);
+        }
+
+        .mobile-dock a {
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.72);
+            text-align: center;
+            padding: 12px 10px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            font-weight: 800;
+        }
+
+        .mobile-dock a.active {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        @media (max-width: 640px) {
+            .coach-topbar,
+            .coach-identity,
+            .section-heading {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .topbar-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .summary-grid,
+            .info-grid,
+            .coach-card-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="coach-app-shell">
+        <header class="coach-topbar">
+            <div>
+                <p class="eyebrow">{{ gym.name }}</p>
+                <h1>Espace coach</h1>
+            </div>
+            <div class="topbar-actions">
+                <button type="button" class="refresh-button" onclick="window.location.reload()">
+                    Actualiser
+                </button>
+                <a class="logout-button" href="{% url 'compte:logout' %}">Deconnexion</a>
+            </div>
+        </header>
+
+        <section class="hero-panel">
+            <div class="coach-identity">
+                <div class="avatar">{{ coach.name|slice:":1" }}</div>
+                <div>
+                    <span class="status-pill {% if current_load_label != 'Disponible' %}warn{% endif %}">{{ current_load_label }}</span>
+                    <h2>{{ coach.name }}</h2>
+                    <p>{{ coach.specialty|default:"Coach sportif" }}</p>
+                </div>
+            </div>
+
+            <div class="coach-card">
+                <div class="coach-card-head">
+                    <div>
+                        <span>Vue mobile de terrain</span>
+                        <strong>{{ gym.name }}</strong>
+                    </div>
+                    <span class="coach-chip">Coach actif</span>
+                </div>
+
+                <div class="coach-card-grid">
+                    <div class="coach-card-metric">
+                        <small>Membres suivis</small>
+                        <strong>{{ members_count }}</strong>
+                    </div>
+                    <div class="coach-card-metric">
+                        <small>Programmes actifs</small>
+                        <strong>{{ programs_count }}</strong>
+                    </div>
+                    <div class="coach-card-metric">
+                        <small>Nouveaux membres</small>
+                        <strong>{{ recent_members_count }}</strong>
+                    </div>
+                    <div class="coach-card-metric">
+                        <small>Telephone</small>
+                        <strong>{{ coach.phone|default:"Non renseigne" }}</strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {% if active_tab == "home" %}
+            <section class="content-panel">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Priorites</p>
+                        <h2>Ce qui compte aujourd'hui</h2>
+                    </div>
+                </div>
+
+                <div class="summary-grid">
+                    <article class="summary-card">
+                        <span>Membres a suivre</span>
+                        <strong>{{ members_count }}</strong>
+                        <small>Ton portefeuille actif visible immediatement.</small>
+                    </article>
+                    <article class="summary-card">
+                        <span>Groupes a animer</span>
+                        <strong>{{ programs_count }}</strong>
+                        <small>Programmes collectifs en cours ou a surveiller.</small>
+                    </article>
+                    <article class="summary-card">
+                        <span>Relances du jour</span>
+                        <strong>{{ due_follow_ups_count }}</strong>
+                        <small>Membres a recontacter ou points de suivi a reprendre.</small>
+                    </article>
+                    <article class="summary-card">
+                        <span>Premier contact en retard</span>
+                        <strong>{{ first_contact_overdue_count }}</strong>
+                        <small>Nouveaux membres sans premier suivi apres 3 jours.</small>
+                    </article>
+                </div>
+
+                <div class="info-grid">
+                    <article class="info-block">
+                        <span>Charge actuelle</span>
+                        <strong>{{ current_load_label }}</strong>
+                    </article>
+                    <article class="info-block">
+                        <span>Nouveaux profils</span>
+                        <strong>{{ recent_members_count }}</strong>
+                    </article>
+                    <article class="info-block">
+                        <span>Sans suivi</span>
+                        <strong>{{ members_without_follow_up_count }}</strong>
+                    </article>
+                    <article class="info-block">
+                        <span>Suivi ancien</span>
+                        <strong>{{ stale_follow_up_members_count }}</strong>
+                    </article>
+                </div>
+
+                {% if priority_members %}
+                    <div class="section-heading">
+                        <div>
+                            <p class="eyebrow">A traiter</p>
+                            <h2>Priorites du jour</h2>
+                        </div>
+                    </div>
+                    <div class="stack" style="margin-bottom:16px;">
+                        {% for member in priority_members %}
+                            <article class="member-card">
+                                <div class="card-head">
+                                    <div>
+                                        <strong>{{ member.first_name }} {{ member.last_name }}</strong>
+                                        <p>{{ member.phone|default:"Telephone non renseigne" }}</p>
+                                    </div>
+                                    {% if not member.latest_follow_up_at %}
+                                        <span class="tag warn">Premier contact</span>
+                                    {% else %}
+                                        <span class="tag warn">Suivi ancien</span>
+                                    {% endif %}
+                                </div>
+                                <div class="detail-list">
+                                    <div><strong>Dernier suivi :</strong> {{ member.latest_follow_up_at|date:"d/m/Y H:i"|default:"Aucun suivi" }}</div>
+                                    <div>
+                                        <a href="{% url 'coaching:coach_member_detail' member.id %}" style="font-weight:800; color: var(--accent-dark); text-decoration:none;">
+                                            Ouvrir la fiche suivi
+                                        </a>
+                                    </div>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="stack">
+                    {% for member in members|slice:":5" %}
+                        <article class="member-card">
+                            <div class="card-head">
+                                <div>
+                                    <strong>{{ member.first_name }} {{ member.last_name }}</strong>
+                                    <p>{{ member.phone|default:"Telephone non renseigne" }}</p>
+                                </div>
+                                {% if member.id in recent_member_ids %}
+                                    <span class="tag warn">Nouveau</span>
+                                {% elif not member.latest_follow_up_at %}
+                                    <span class="tag warn">Sans suivi</span>
+                                {% else %}
+                                    <span class="tag">Suivi</span>
+                                {% endif %}
+                            </div>
+                            <div class="detail-list">
+                                <div><strong>Email :</strong> {{ member.email|default:"Non renseigne" }}</div>
+                                <div><strong>Formule :</strong> {{ member.subscription_type|default:"Aucune formule visible" }}</div>
+                                <div>
+                                    <a href="{% url 'coaching:coach_member_detail' member.id %}" style="font-weight:800; color: var(--accent-dark); text-decoration:none;">
+                                        Ouvrir la fiche suivi
+                                    </a>
+                                </div>
+                            </div>
+                        </article>
+                    {% empty %}
+                        <div class="empty-state">Aucun membre n'est encore rattache a ce coach.</div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% elif active_tab == "members" %}
+            <section class="content-panel">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Portefeuille</p>
+                        <h2>Mes membres</h2>
+                    </div>
+                    <small>{{ members_count }} membre{{ members_count|pluralize }} suivi{{ members_count|pluralize }}</small>
+                </div>
+
+                <div class="stack">
+                    {% for member in members %}
+                        <article class="member-card">
+                            <div class="card-head">
+                                <div>
+                                    <strong>{{ member.first_name }} {{ member.last_name }}</strong>
+                                    <p>{{ member.phone|default:"Telephone non renseigne" }}</p>
+                                </div>
+                                {% if member.id in recent_member_ids %}
+                                    <span class="tag warn">Nouveau</span>
+                                {% elif not member.latest_follow_up_at %}
+                                    <span class="tag warn">Sans suivi</span>
+                                {% else %}
+                                    <span class="tag">Actif</span>
+                                {% endif %}
+                            </div>
+                            <div class="detail-list">
+                                <div><strong>Email :</strong> {{ member.email|default:"Non renseigne" }}</div>
+                                <div><strong>Formule :</strong> {{ member.subscription_type|default:"-" }}</div>
+                                <div><strong>Dernier suivi :</strong> {{ member.latest_follow_up_at|date:"d/m/Y H:i"|default:"Aucun suivi" }}</div>
+                                <div>
+                                    <a href="{% url 'coaching:coach_member_detail' member.id %}" style="font-weight:800; color: var(--accent-dark); text-decoration:none;">
+                                        Voir le suivi membre
+                                    </a>
+                                </div>
+                            </div>
+                        </article>
+                    {% empty %}
+                        <div class="empty-state">Aucun membre n'est encore suivi.</div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% else %}
+            <section class="content-panel">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Collectif</p>
+                        <h2>Mes programmes groupes</h2>
+                    </div>
+                    <small>{{ programs_count }} programme{{ programs_count|pluralize }} actif{{ programs_count|pluralize }}</small>
+                </div>
+
+                <div class="stack">
+                    {% for program in programs %}
+                        <article class="program-card">
+                            <div class="card-head">
+                                <div>
+                                    <strong>{{ program.name }}</strong>
+                                    <p>{{ program.objective|default:"Objectif a definir" }}</p>
+                                </div>
+                                <span class="tag">{{ program.participants_total }}/{{ program.capacity }}</span>
+                            </div>
+                            <div class="detail-list">
+                                <div><strong>Description :</strong> {{ program.description|default:"Programme groupe actif sur le club." }}</div>
+                                <div><strong>Places restantes :</strong> {{ program.available_slots }}</div>
+                            </div>
+                        </article>
+                    {% empty %}
+                        <div class="empty-state">Aucun programme groupe ne t'est encore attribue.</div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+    </main>
+
+    <nav class="mobile-dock" aria-label="Navigation coach">
+        <a href="{% url 'coaching:coach_portal' %}?tab=home" class="{% if active_tab == 'home' %}active{% endif %}">Accueil</a>
+        <a href="{% url 'coaching:coach_portal' %}?tab=members" class="{% if active_tab == 'members' %}active{% endif %}">Membres</a>
+        <a href="{% url 'coaching:coach_portal' %}?tab=programs" class="{% if active_tab == 'programs' %}active{% endif %}">Programmes</a>
+    </nav>
+</body>
+</html>
