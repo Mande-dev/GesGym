@@ -64,6 +64,113 @@ def _coach_portal_member_queryset(request, coach):
     return coach.members.filter(gym=request.gym, is_active=True).order_by("first_name", "last_name")
 
 
+def _member_full_name(member):
+    return f"{member.first_name} {member.last_name}".strip()
+
+
+def _build_coach_priority_queue(priority_members, overdue_follow_ups, sensitive_feedbacks):
+    items = []
+
+    for feedback in sensitive_feedbacks:
+        items.append(
+            {
+                "kind": "feedback",
+                "severity": 1 if feedback.wants_contact else 2,
+                "title": _member_full_name(feedback.member),
+                "badge": "A rappeler" if feedback.wants_contact else "Avis faible",
+                "summary": feedback.comment or "Feedback sensible a traiter rapidement.",
+                "meta": f"{feedback.overall_rating}/5",
+                "member_id": feedback.member_id,
+            }
+        )
+
+    for follow_up in overdue_follow_ups:
+        items.append(
+            {
+                "kind": "follow_up",
+                "severity": 3,
+                "title": _member_full_name(follow_up.member),
+                "badge": "Relance en retard",
+                "summary": follow_up.next_action or "Reprendre le contact prevu.",
+                "meta": follow_up.next_follow_up_at.strftime("%d/%m/%Y") if follow_up.next_follow_up_at else "",
+                "member_id": follow_up.member_id,
+            }
+        )
+
+    for member in priority_members:
+        items.append(
+            {
+                "kind": "member",
+                "severity": 4 if not getattr(member, "latest_follow_up_at", None) else 5,
+                "title": _member_full_name(member),
+                "badge": "Premier contact" if not getattr(member, "latest_follow_up_at", None) else "Suivi ancien",
+                "summary": "Aucun suivi n'a encore ete enregistre." if not getattr(member, "latest_follow_up_at", None) else "Le dernier suivi commence a dater.",
+                "meta": member.phone or "",
+                "member_id": member.id,
+            }
+        )
+
+    items.sort(key=lambda item: (item["severity"], item["title"]))
+    return items[:8]
+
+
+def _build_manager_priority_queue(sensitive_feedbacks, overdue_follow_ups, first_contact_overdue_members, stale_follow_up_members):
+    items = []
+
+    for feedback in sensitive_feedbacks:
+        items.append(
+            {
+                "kind": "feedback",
+                "severity": 1 if feedback.wants_contact else 2,
+                "title": _member_full_name(feedback.member),
+                "badge": "A escalader" if feedback.wants_contact else "Avis faible",
+                "summary": feedback.comment or "Feedback sensible recu.",
+                "meta": f"{feedback.coach.name} • {feedback.overall_rating}/5",
+            }
+        )
+
+    for follow_up in overdue_follow_ups:
+        items.append(
+            {
+                "kind": "follow_up",
+                "severity": 3,
+                "title": _member_full_name(follow_up.member),
+                "badge": "Relance en retard",
+                "summary": follow_up.next_action or "Relance depassee a reprendre.",
+                "meta": f"{follow_up.coach.name} • {follow_up.next_follow_up_at.strftime('%d/%m/%Y') if follow_up.next_follow_up_at else ''}",
+            }
+        )
+
+    for member in first_contact_overdue_members:
+        coach = member.coaches.filter(gym=member.gym, is_active=True).order_by("name").first()
+        items.append(
+            {
+                "kind": "first_contact",
+                "severity": 4,
+                "title": _member_full_name(member),
+                "badge": "Premier contact",
+                "summary": "Toujours aucun premier suivi trace.",
+                "meta": coach.name if coach else "Coach non resolu",
+            }
+        )
+
+    for member in stale_follow_up_members:
+        coach = member.coaches.filter(gym=member.gym, is_active=True).order_by("name").first()
+        items.append(
+            {
+                "kind": "stale",
+                "severity": 5,
+                "title": _member_full_name(member),
+                "badge": "Suivi ancien",
+                "summary": "Le suivi commence a dater.",
+                "meta": coach.name if coach else "Coach non resolu",
+            }
+        )
+
+    items.sort(key=lambda item: (item["severity"], item["title"]))
+    return items[:10]
+
+
 @login_required
 @module_required("COACHING")
 @role_required(COACHING_ROLES)
@@ -77,6 +184,16 @@ def coach_list(request):
         last_follow_up_at=Max("follow_ups__created_at"),
         feedback_average=Avg("feedbacks__overall_rating"),
         feedback_count=Count("feedbacks", distinct=True),
+        low_feedback_count=Count(
+            "feedbacks",
+            filter=Q(feedbacks__overall_rating__lte=2),
+            distinct=True,
+        ),
+        contact_request_feedback_count=Count(
+            "feedbacks",
+            filter=Q(feedbacks__wants_contact=True),
+            distinct=True,
+        ),
         overdue_follow_ups=Count(
             "follow_ups",
             filter=Q(follow_ups__next_follow_up_at__isnull=False, follow_ups__next_follow_up_at__lte=today),
@@ -132,6 +249,12 @@ def coach_list(request):
         .select_related("coach", "member", "group_program")
         .order_by("-created_at")[:5]
     )
+    sensitive_feedbacks = (
+        CoachingFeedback.objects.filter(gym=gym)
+        .filter(Q(overall_rating__lte=2) | Q(wants_contact=True))
+        .select_related("coach", "member", "group_program")
+        .order_by("-wants_contact", "overall_rating", "-created_at")[:5]
+    )
 
     context = {
         "gym": gym,
@@ -144,6 +267,13 @@ def coach_list(request):
         "stale_follow_up_members": stale_follow_up_members,
         "overdue_follow_ups": overdue_follow_ups,
         "recent_feedbacks": recent_feedbacks,
+        "sensitive_feedbacks": sensitive_feedbacks,
+        "manager_priority_queue": _build_manager_priority_queue(
+            sensitive_feedbacks,
+            overdue_follow_ups,
+            first_contact_overdue_members,
+            stale_follow_up_members,
+        ),
         **build_coaching_kpis(gym),
     }
     return render(request, "coaching/coach_list.html", context)
@@ -182,6 +312,8 @@ def coach_detail(request, coach_id):
         ) if feedbacks.exists() else 0,
         "feedback_count": feedbacks.count(),
         "contact_requested_count": feedbacks.filter(wants_contact=True).count(),
+        "low_feedback_count": feedbacks.filter(overall_rating__lte=2).count(),
+        "sensitive_feedbacks": feedbacks.filter(Q(overall_rating__lte=2) | Q(wants_contact=True))[:5],
         **build_coaching_kpis(request.gym),
     }
     return render(request, "coaching/coach_detail.html", context)
@@ -428,12 +560,19 @@ def coach_portal(request):
         .order_by("name")
     )
     recent_member_ids = set(members.order_by("-created_at").values_list("id", flat=True)[:5])
-    due_follow_ups_count = CoachingFollowUp.objects.filter(
+    coach_overdue_follow_ups = CoachingFollowUp.objects.filter(
         gym=request.gym,
         coach=coach,
         next_follow_up_at__isnull=False,
         next_follow_up_at__lte=today,
-    ).count()
+    ).select_related("member").order_by("next_follow_up_at", "-created_at")
+    due_follow_ups_count = coach_overdue_follow_ups.count()
+    sensitive_feedbacks = (
+        CoachingFeedback.objects.filter(gym=request.gym, coach=coach)
+        .filter(Q(overall_rating__lte=2) | Q(wants_contact=True))
+        .select_related("member", "group_program")
+        .order_by("-wants_contact", "overall_rating", "-created_at")[:5]
+    )
     first_contact_overdue_members = members.filter(
         created_at__date__lte=first_contact_deadline,
         latest_follow_up_at__isnull=True,
@@ -461,6 +600,9 @@ def coach_portal(request):
         "first_contact_overdue_count": first_contact_overdue_members.count(),
         "stale_follow_up_members_count": stale_follow_up_members.count(),
         "priority_members": priority_members,
+        "sensitive_feedbacks": sensitive_feedbacks,
+        "sensitive_feedback_count": sensitive_feedbacks.count(),
+        "coach_priority_queue": _build_coach_priority_queue(priority_members, coach_overdue_follow_ups[:5], sensitive_feedbacks),
         "current_load_label": "Charge elevee" if members.count() >= 10 else "Charge moyenne" if members.count() >= 5 else "Disponible",
     }
     return render(request, "coaching/coach_portal.html", context)

@@ -544,6 +544,11 @@
                         <strong>{{ first_contact_overdue_count }}</strong>
                         <small>Nouveaux membres sans premier suivi apres 3 jours.</small>
                     </article>
+                    <article class="summary-card">
+                        <span>Feedbacks sensibles</span>
+                        <strong>{{ sensitive_feedback_count }}</strong>
+                        <small>Avis faibles ou demandes de recontact a traiter.</small>
+                    </article>
                 </div>
 
                 <div class="info-grid">
@@ -590,6 +595,72 @@
                                     <div><strong>Dernier suivi :</strong> {{ member.latest_follow_up_at|date:"d/m/Y H:i"|default:"Aucun suivi" }}</div>
                                     <div>
                                         <a href="{% url 'coaching:coach_member_detail' member.id %}" style="font-weight:800; color: var(--accent-dark); text-decoration:none;">
+                                            Ouvrir la fiche suivi
+                                        </a>
+                                    </div>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% if coach_priority_queue %}
+                    <div class="section-heading">
+                        <div>
+                            <p class="eyebrow">File de travail</p>
+                            <h2>A traiter maintenant</h2>
+                        </div>
+                    </div>
+                    <div class="stack" style="margin-bottom:16px;">
+                        {% for item in coach_priority_queue %}
+                            <article class="member-card">
+                                <div class="card-head">
+                                    <div>
+                                        <strong>{{ item.title }}</strong>
+                                        <p>{{ item.meta|default:"" }}</p>
+                                    </div>
+                                    <span class="tag warn">{{ item.badge }}</span>
+                                </div>
+                                <div class="detail-list">
+                                    <div>{{ item.summary }}</div>
+                                    <div>
+                                        <a href="{% url 'coaching:coach_member_detail' item.member_id %}" style="font-weight:800; color: var(--accent-dark); text-decoration:none;">
+                                            Ouvrir la fiche suivi
+                                        </a>
+                                    </div>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% if sensitive_feedbacks %}
+                    <div class="section-heading">
+                        <div>
+                            <p class="eyebrow">Qualite</p>
+                            <h2>Feedbacks sensibles</h2>
+                        </div>
+                    </div>
+                    <div class="stack" style="margin-bottom:16px;">
+                        {% for feedback in sensitive_feedbacks %}
+                            <article class="member-card">
+                                <div class="card-head">
+                                    <div>
+                                        <strong>{{ feedback.member.first_name }} {{ feedback.member.last_name }}</strong>
+                                        <p>{{ feedback.overall_rating }}/5{% if feedback.group_program %} - {{ feedback.group_program.name }}{% endif %}</p>
+                                    </div>
+                                    {% if feedback.wants_contact %}
+                                        <span class="tag warn">A rappeler</span>
+                                    {% else %}
+                                        <span class="tag warn">Avis faible</span>
+                                    {% endif %}
+                                </div>
+                                <div class="detail-list">
+                                    {% if feedback.comment %}
+                                        <div><strong>Commentaire :</strong> {{ feedback.comment|truncatechars:100 }}</div>
+                                    {% endif %}
+                                    <div>
+                                        <a href="{% url 'coaching:coach_member_detail' feedback.member.id %}" style="font-weight:800; color: var(--accent-dark); text-decoration:none;">
                                             Ouvrir la fiche suivi
                                         </a>
                                     </div>

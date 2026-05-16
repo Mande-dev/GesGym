@@ -36,6 +36,16 @@ def build_coaching_kpis(gym, period_data=None):
             last_follow_up_at=Max("follow_ups__created_at"),
             feedback_average=Avg("feedbacks__overall_rating"),
             feedback_count=Count("feedbacks", distinct=True),
+            low_feedback_count=Count(
+                "feedbacks",
+                filter=Q(feedbacks__overall_rating__lte=2),
+                distinct=True,
+            ),
+            contact_request_feedback_count=Count(
+                "feedbacks",
+                filter=Q(feedbacks__wants_contact=True),
+                distinct=True,
+            ),
             overdue_follow_ups=Count(
                 "follow_ups",
                 filter=Q(follow_ups__next_follow_up_at__isnull=False, follow_ups__next_follow_up_at__lte=today),
@@ -68,6 +78,10 @@ def build_coaching_kpis(gym, period_data=None):
     feedback_average = CoachingFeedback.objects.filter(gym=gym).aggregate(value=Avg("overall_rating"))["value"]
     feedback_count = CoachingFeedback.objects.filter(gym=gym).count()
     contact_requested_count = CoachingFeedback.objects.filter(gym=gym, wants_contact=True).count()
+    low_feedback_count = CoachingFeedback.objects.filter(gym=gym, overall_rating__lte=2).count()
+    sensitive_feedback_count = CoachingFeedback.objects.filter(
+        gym=gym,
+    ).filter(Q(overall_rating__lte=2) | Q(wants_contact=True)).count()
     most_exposed_coaches = (
         active_coaches.annotate(
             member_count=Count("members", distinct=True),
@@ -79,9 +93,30 @@ def build_coaching_kpis(gym, period_data=None):
             last_follow_up_at=Max("follow_ups__created_at"),
             feedback_average=Avg("feedbacks__overall_rating"),
             feedback_count=Count("feedbacks", distinct=True),
+            low_feedback_count=Count(
+                "feedbacks",
+                filter=Q(feedbacks__overall_rating__lte=2),
+                distinct=True,
+            ),
+            contact_request_feedback_count=Count(
+                "feedbacks",
+                filter=Q(feedbacks__wants_contact=True),
+                distinct=True,
+            ),
         )
-        .filter(Q(member_count__gt=0) | Q(overdue_follow_ups__gt=0))
-        .order_by("-overdue_follow_ups", "last_follow_up_at", "name")[:5]
+        .filter(
+            Q(member_count__gt=0)
+            | Q(overdue_follow_ups__gt=0)
+            | Q(low_feedback_count__gt=0)
+            | Q(contact_request_feedback_count__gt=0)
+        )
+        .order_by(
+            "-contact_request_feedback_count",
+            "-low_feedback_count",
+            "-overdue_follow_ups",
+            "last_follow_up_at",
+            "name",
+        )[:5]
     )
     total_active_coaches = active_coaches.count()
     assigned_count = assigned_members.count()
@@ -105,6 +140,8 @@ def build_coaching_kpis(gym, period_data=None):
         "feedback_average": round(feedback_average or 0, 1),
         "feedback_count": feedback_count,
         "contact_requested_count": contact_requested_count,
+        "low_feedback_count": low_feedback_count,
+        "sensitive_feedback_count": sensitive_feedback_count,
         "average_members_per_coach": average_members,
         "new_coaches_period": new_coaches_period,
         "top_coaches": top_coaches,

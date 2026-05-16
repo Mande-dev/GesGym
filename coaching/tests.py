@@ -266,6 +266,53 @@ class CoachingTenantTests(TestCase):
         self.assertContains(response, "Premier contact en retard")
         self.assertContains(response, "Premier contact")
 
+    def test_coach_portal_surfaces_sensitive_feedback_alerts(self):
+        self.client.logout()
+        self.client.login(username="coach-mobile", password="test-pass")
+        self.coach_a.members.add(self.member_a)
+        CoachingFeedback.objects.create(
+            gym=self.gym_a,
+            member=self.member_a,
+            coach=self.coach_a,
+            overall_rating=2,
+            listening_rating=2,
+            clarity_rating=2,
+            motivation_rating=3,
+            availability_rating=2,
+            comment="Je me sens peu suivi",
+            wants_contact=True,
+        )
+
+        response = self.client.get(reverse("coaching:coach_portal"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Feedbacks sensibles")
+        self.assertContains(response, "A rappeler")
+        self.assertContains(response, "Je me sens peu suivi")
+
+    def test_coach_portal_builds_unified_priority_queue(self):
+        self.client.logout()
+        self.client.login(username="coach-mobile", password="test-pass")
+        self.coach_a.members.add(self.member_a)
+        CoachingFeedback.objects.create(
+            gym=self.gym_a,
+            member=self.member_a,
+            coach=self.coach_a,
+            overall_rating=2,
+            listening_rating=2,
+            clarity_rating=2,
+            motivation_rating=2,
+            availability_rating=2,
+            comment="Besoin aide rapide",
+            wants_contact=True,
+        )
+
+        response = self.client.get(reverse("coaching:coach_portal"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "A traiter maintenant")
+        self.assertContains(response, "Besoin aide rapide")
+
     def test_manager_dashboard_shows_follow_up_alerts(self):
         self.coach_a.members.add(self.member_a)
         Member.objects.filter(id=self.member_a.id).update(created_at=timezone.now() - timedelta(days=5))
@@ -326,3 +373,46 @@ class CoachingTenantTests(TestCase):
         self.assertContains(response, "Feedbacks recents")
         self.assertContains(response, "Tres bon suivi")
         self.assertContains(response, "A rappeler")
+
+    def test_manager_dashboard_shows_sensitive_feedback_alerts(self):
+        self.coach_a.members.add(self.member_a)
+        CoachingFeedback.objects.create(
+            gym=self.gym_a,
+            member=self.member_a,
+            coach=self.coach_a,
+            overall_rating=2,
+            listening_rating=2,
+            clarity_rating=2,
+            motivation_rating=2,
+            availability_rating=2,
+            comment="Accompagnement trop faible",
+            wants_contact=True,
+        )
+
+        response = self.client.get(reverse("coaching:list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Feedbacks sensibles")
+        self.assertContains(response, "Accompagnement trop faible")
+        self.assertContains(response, "avis ont une note globale de 2/5 ou moins")
+
+    def test_manager_dashboard_builds_priority_queue(self):
+        self.coach_a.members.add(self.member_a)
+        CoachingFeedback.objects.create(
+            gym=self.gym_a,
+            member=self.member_a,
+            coach=self.coach_a,
+            overall_rating=2,
+            listening_rating=2,
+            clarity_rating=2,
+            motivation_rating=2,
+            availability_rating=2,
+            comment="Sujet a escalader",
+            wants_contact=True,
+        )
+
+        response = self.client.get(reverse("coaching:list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "File manager a traiter")
+        self.assertContains(response, "Sujet a escalader")
